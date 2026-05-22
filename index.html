@@ -552,12 +552,15 @@ function confirmScan(scanned) {
   const item = items[currentIdx];
   if (item.status!=='pending' && item.status!=='partial') return;
   const expected = item.lot.trim().toUpperCase();
-  const extracted = extractLotFromGS1(scanned.trim());
+  const rawScanned = scanned.trim();
+  const extracted = extractLotFromGS1(rawScanned);
   const got = extracted.toUpperCase();
-  console.log('Scanned raw:', scanned, '→ extracted:', extracted, '→ expected:', expected);
+  // Coincidencia parcial: el lote esperado está contenido en el código escaneado
+  const partialMatch = rawScanned.toUpperCase().includes(expected) || got.includes(expected);
+  console.log('Raw:', rawScanned, '→ extracted:', extracted, '→ expected:', expected, '→ partial:', partialMatch);
   document.getElementById('lotInput').value = '';
 
-  if (got === expected) {
+  if (got === expected || partialMatch) {
     item.scannedOk++;
     item.status = item.scannedOk >= item.qty ? 'ok' : 'partial';
     if (item.status === 'ok') {
