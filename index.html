@@ -226,49 +226,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 
 .nav-tab.active{background:var(--surface2);color:var(--text);}
 
-
-/* ── ZONA HEADERS ─────────────────────────────────────── */
-.zone-header{display:flex;align-items:center;gap:10px;padding:10px 0 4px;margin-top:4px;}
-.zone-badge{font-family:var(--mono);font-size:11px;font-weight:700;padding:3px 10px;border-radius:4px;letter-spacing:.08em;white-space:nowrap;}
-.zone-mz  {background:rgba(99,102,241,.2);color:#a5b4fc;border:1px solid rgba(99,102,241,.35);}
-.zone-amb {background:rgba(0,229,160,.12);color:var(--accent);border:1px solid rgba(0,229,160,.25);}
-.zone-cr  {background:rgba(255,184,48,.12);color:var(--warn);border:1px solid rgba(255,184,48,.25);}
-.zone-cc  {background:rgba(255,77,109,.12);color:var(--danger);border:1px solid rgba(255,77,109,.25);}
-.zone-otro{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
-.zone-divider{flex:1;height:1px;background:var(--border);}
-.zone-prog{font-family:var(--mono);font-size:10px;color:var(--text2);}
-
-/* ── ZONA TRANSITION MODAL ───────────────────────────── */
-.zone-modal{display:none;position:fixed;inset:0;z-index:250;background:rgba(15,17,23,.96);align-items:center;justify-content:center;padding:24px;}
-.zone-modal.show{display:flex;}
-.zone-modal-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px 24px;text-align:center;width:100%;max-width:340px;}
-.zone-modal-icon{font-size:52px;margin-bottom:12px;}
-.zone-modal-title{font-size:16px;font-weight:700;color:var(--accent);margin-bottom:6px;}
-.zone-modal-sub{font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6;}
-.zone-from-badge{font-family:var(--mono);font-size:13px;font-weight:700;padding:6px 16px;border-radius:6px;margin-bottom:12px;display:inline-block;opacity:.6;}
-.zone-arrow{font-size:22px;color:var(--text2);margin-bottom:12px;}
-.zone-to-badge{font-family:var(--mono);font-size:22px;font-weight:700;padding:12px 28px;border-radius:8px;margin-bottom:24px;display:inline-block;}
-.zone-modal-count{font-family:var(--mono);font-size:11px;color:var(--text2);margin-bottom:20px;}
-
-/* ── WAREHOUSE MAP ────────────────────────────────────── */
-.map-container{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px;}
-.map-title{font-size:11px;font-family:var(--mono);color:var(--text2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px;text-align:center;}
-.map-svg{width:100%;height:auto;}
-.map-zone-rect{rx:6;ry:6;transition:opacity .3s;}
-.map-zone-rect.current{filter:drop-shadow(0 0 8px currentColor);}
-.map-legend{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;}
-.map-legend-item{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2);font-family:var(--mono);}
-.map-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
-.map-status-bar{margin-top:12px;background:var(--surface2);border-radius:6px;padding:10px 12px;font-size:12px;color:var(--text2);text-align:center;font-family:var(--mono);}
-
-/* ── ZEBRA MODE BADGE ─────────────────────────────────── */
-.zebra-badge{font-family:var(--mono);font-size:10px;background:rgba(0,229,160,.12);color:var(--accent);border:1px solid rgba(0,229,160,.25);border-radius:4px;padding:2px 8px;letter-spacing:.05em;cursor:pointer;}
-.zebra-badge.off{background:var(--surface2);color:var(--text2);border-color:var(--border);}
-
-/* ── ZONE INDICATOR IN ACTIVE CARD ───────────────────── */
-.active-zone-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
-.active-zone-label{font-size:10px;color:var(--text2);font-family:var(--mono);letter-spacing:.06em;}
-
 </style>
 
 </head>
@@ -437,7 +394,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 
 </div>
 
-<input class="scan-input" id="lotInput" type="text" placeholder="Escanear código de lote..." autocomplete="off" autocorrect="off" spellcheck="false" inputmode="none" style="margin-top:12px;">
+<input class="scan-input" id="lotInput" type="text" placeholder="Escanear código de lote..." autocomplete="off" autocorrect="off" spellcheck="false" style="margin-top:12px;">
 
 <button class="skip-btn" onclick="skipItem()">Omitir producto restante →</button>
 
@@ -563,15 +520,7 @@ let order = null;
 
 let items = [];
 
-let // Ordenar por zona (MZ→AMB→CR→CC) y luego por ubicación
-items.sort((a, b) => {
-  const zr = zoneRank(a.zone) - zoneRank(b.zone);
-  if (zr !== 0) return zr;
-  return a.loc.localeCompare(b.loc);
-});
-// Re-asignar índices después del ordenamiento
-items.forEach((item, i) => { item.idx = i; });
-currentIdx = 0;
+let currentIdx = 0;
 
 let _uid = null;
 
@@ -798,8 +747,6 @@ lot: Array.isArray(m.lot_id) ? m.lot_id[1] : (m.lot_name || '—'),
 qty: m.product_uom_qty || m.qty_done || 1,
 
 loc: Array.isArray(m.location_id) ? m.location_id[1].split('/').pop() : '—',
-locFull: Array.isArray(m.location_id) ? m.location_id[1] : '—',
-zone: detectZone(Array.isArray(m.location_id) ? m.location_id[1] : ''),
 
 exp: m.expiration_date ? m.expiration_date.substring(0,10) : null,
 
@@ -881,27 +828,7 @@ const list = document.getElementById('productList');
 
 list.innerHTML = '';
 
-let _lastZone = null;
-
 items.forEach((item, i) => {
-
-  if (item.zone !== _lastZone) {
-
-    const zoneItems = items.filter(it => it.zone === item.zone);
-
-    const zoneDone  = zoneItems.filter(it => it.status !== 'pending' && it.status !== 'partial').length;
-
-    const zh = document.createElement('div');
-
-    zh.className = 'zone-header';
-
-    zh.innerHTML = '<span class="zone-badge ' + (ZONE_CSS[item.zone]||'zone-otro') + '">' + item.zone + '</span><div class="zone-divider"></div><span class="zone-prog">' + zoneDone + '/' + zoneItems.length + '</span>';
-
-    list.appendChild(zh);
-
-    _lastZone = item.zone;
-
-  }
 
 const isActive = i === currentIdx && (item.status==='pending'||item.status==='partial');
 
@@ -970,12 +897,6 @@ document.getElementById('activeName').textContent = cleanName(item.name);
 document.getElementById('activeLot').textContent = item.lot;
 
 document.getElementById('activeLoc').textContent = item.loc;
-
-const zoneBadgeEl = document.getElementById('activeZoneBadge');
-
-if (zoneBadgeEl) { zoneBadgeEl.textContent = item.zone; zoneBadgeEl.className = 'zone-badge ' + (ZONE_CSS[item.zone]||'zone-otro'); }
-
-updateMap();
 
 const expEl = document.getElementById('activeExp');
 
@@ -1171,8 +1092,6 @@ updateProgress();
 
 function advanceNext() {
 
-const prevZone = (currentIdx < items.length) ? items[currentIdx].zone : null;
-
 let next = -1;
 
 for (let i = currentIdx+1; i < items.length; i++) {
@@ -1191,25 +1110,9 @@ if (items[i].status==='pending'||items[i].status==='partial') { next=i; break; }
 
 }
 
-if (next !== -1) {
+if (next !== -1) { currentIdx = next; renderList(); setActiveItem(); }
 
-const nextZone = items[next].zone;
-
-if (prevZone && nextZone !== prevZone && prevZone !== 'OTRO') {
-
-const pendingInNext = items.filter(it => it.zone === nextZone && (it.status==='pending'||it.status==='partial')).length;
-
-renderList();
-
-showZoneTransition(prevZone, nextZone, pendingInNext, () => { currentIdx = next; renderList(); setActiveItem(); });
-
-return;
-
-}
-
-currentIdx = next; renderList(); setActiveItem();
-
-} else { renderList(); }
+else { renderList(); }
 
 }
 
@@ -1535,8 +1438,6 @@ setTimeout(() => document.getElementById('orderInput').focus(), 100);
 
 (async function init() {
 
-applyZebraMode();
-
 if (cfg.url && cfg.key) {
 
 try { const uid = await getUid(); if(uid) setConn('ok'); }
@@ -1553,178 +1454,7 @@ setTimeout(() => document.getElementById('orderInput').focus(), 300);
 
 })();
 
-
-
-// ═══════════════════════════════════════════════════════
-// ZONAS — Detección, Ordenamiento y Transición
-// ═══════════════════════════════════════════════════════
-
-const ZONE_ORDER = ['MZ', 'AMB', 'CR', 'CC'];
-
-const ZONE_CSS = {
-  'MZ': 'zone-mz', 'AMB': 'zone-amb', 'CR': 'zone-cr', 'CC': 'zone-cc', 'OTRO': 'zone-otro'
-};
-
-const ZONE_LABELS = {
-  'MZ': 'Medicamentos', 'AMB': 'Ambiente', 'CR': 'Cuarto Frío', 'CC': 'Cámara Fría', 'OTRO': 'Otros'
-};
-
-function detectZone(fullPath) {
-  const parts = (fullPath || '').split('/');
-  for (const zone of ZONE_ORDER) {
-    for (const part of parts) {
-      const p = part.trim().toUpperCase();
-      if (p === zone || p.startsWith(zone + '-') || p.startsWith(zone + ' ') || p.includes(zone)) {
-        return zone;
-      }
-    }
-  }
-  return 'OTRO';
-}
-
-function zoneRank(zone) {
-  const i = ZONE_ORDER.indexOf(zone);
-  return i === -1 ? 99 : i;
-}
-
-// ── Zone Transition Modal ────────────────────────────────
-function showZoneTransition(fromZone, toZone, pendingInTo, callback) {
-  const fromBadge = document.getElementById('ztFromBadge');
-  const toBadge   = document.getElementById('ztToBadge');
-  fromBadge.textContent = fromZone;
-  fromBadge.className = 'zone-from-badge zone-badge ' + (ZONE_CSS[fromZone] || 'zone-otro');
-  toBadge.textContent = toZone;
-  toBadge.className = 'zone-to-badge zone-badge ' + (ZONE_CSS[toZone] || 'zone-otro');
-  document.getElementById('ztToText').textContent = toZone;
-  document.getElementById('ztCount').textContent = pendingInTo + ' producto(s) pendiente(s) en ' + toZone;
-  document.getElementById('zoneModal').classList.add('show');
-  window._ztCallback = callback;
-}
-
-function confirmZoneTransition() {
-  document.getElementById('zoneModal').classList.remove('show');
-  if (window._ztCallback) { window._ztCallback(); window._ztCallback = null; }
-  setTimeout(() => { const li = document.getElementById('lotInput'); if (li) li.focus(); }, 200);
-}
-
-// ── Zebra Mode (sin teclado virtual) ────────────────────
-let zebraMode = JSON.parse(localStorage.getItem('di_zebra_mode') || 'true');
-
-function applyZebraMode() {
-  const lotInput   = document.getElementById('lotInput');
-  const badge      = document.getElementById('zebraBadge');
-  if (!lotInput || !badge) return;
-  if (zebraMode) {
-    lotInput.setAttribute('inputmode', 'none');
-    badge.textContent = 'ZEBRA ●';
-    badge.className = 'zebra-badge';
-  } else {
-    lotInput.setAttribute('inputmode', 'text');
-    badge.textContent = 'ZEBRA ○';
-    badge.className = 'zebra-badge off';
-  }
-}
-
-function toggleZebraMode() {
-  zebraMode = !zebraMode;
-  localStorage.setItem('di_zebra_mode', JSON.stringify(zebraMode));
-  applyZebraMode();
-  toast(zebraMode ? '🔫 Modo Zebra activado (sin teclado)' : '⌨️ Modo teclado activado');
-}
-
-// ── Warehouse Map ────────────────────────────────────────
-function updateMap() {
-  const ZONE_CENTERS = { 'MZ': [98, 55], 'AMB': [244, 55], 'CR': [98, 142], 'CC': [244, 142] };
-  const ZONE_COLORS  = { 'MZ': '#6366f1', 'AMB': '#00e5a0', 'CR': '#ffb830', 'CC': '#ff4d6d' };
-
-  // Reset all zones
-  ZONE_ORDER.forEach(z => {
-    const rect = document.getElementById('mapZone-' + z);
-    if (rect) { rect.style.opacity = '0.5'; rect.style.strokeWidth = '1.5'; }
-    const cnt = document.getElementById('mapCount-' + z);
-    if (cnt) { const n = items.filter(i => i.zone === z).length; cnt.textContent = n + (n === 1 ? ' prod.' : ' prod.'); }
-  });
-
-  if (!items.length) {
-    document.getElementById('mapStatusBar').textContent = 'Sin orden cargada';
-    return;
-  }
-
-  const currentZone = currentIdx < items.length ? items[currentIdx].zone : null;
-
-  if (currentZone && ZONE_ORDER.includes(currentZone)) {
-    const rect = document.getElementById('mapZone-' + currentZone);
-    if (rect) { rect.style.opacity = '1'; rect.style.strokeWidth = '2.5'; }
-    const pending = items.filter(i => i.zone === currentZone && (i.status === 'pending' || i.status === 'partial')).length;
-    document.getElementById('mapStatusBar').textContent =
-      'Zona actual: ' + currentZone + ' — ' + ZONE_LABELS[currentZone] + ' · ' + pending + ' pendiente(s)';
-  } else {
-    document.getElementById('mapStatusBar').textContent = order ? '✅ Todas las zonas procesadas' : 'Sin orden cargada';
-  }
-}
-
 </script>
-
-
-<!-- ZONE TRANSITION MODAL -->
-<div class="zone-modal" id="zoneModal">
-  <div class="zone-modal-card">
-    <div class="zone-modal-icon">✅</div>
-    <div class="zone-modal-title">Zona completada</div>
-    <div class="zone-modal-sub">Todos los productos de esta zona fueron procesados.</div>
-    <div class="zone-from-badge zone-badge" id="ztFromBadge">MZ</div>
-    <div class="zone-arrow">↓</div>
-    <div class="zone-to-badge zone-badge" id="ztToBadge">AMB</div>
-    <div class="zone-modal-count" id="ztCount"></div>
-    <button class="btn btn-primary" onclick="confirmZoneTransition()">Ir a zona <span id="ztToText"></span> →</button>
-  </div>
-</div>
-
-<!-- SCREEN: WAREHOUSE MAP (standalone, abierta desde ícono) -->
-<div class="screen" id="screenMap">
-  <div class="section-title">Mapa del almacén</div>
-  <div class="map-container">
-    <div class="map-title">LAYOUT — DIAGNÓSTICA INTERNACIONAL</div>
-    <svg class="map-svg" viewBox="0 0 300 220" xmlns="http://www.w3.org/2000/svg" id="warehouseSvg">
-      <!-- Fondo total -->
-      <rect x="0" y="0" width="300" height="220" rx="8" fill="#1a1d27" stroke="#2e3247" stroke-width="1"/>
-      <!-- ZONA MZ (Medicamentos) - arriba izquierda grande -->
-      <rect id="mapZone-MZ" x="8" y="8" width="180" height="90" rx="5" fill="rgba(99,102,241,0.15)" stroke="#6366f1" stroke-width="1.5"/>
-      <text x="98" y="42" text-anchor="middle" fill="#a5b4fc" font-family="monospace" font-size="14" font-weight="bold">MZ</text>
-      <text x="98" y="58" text-anchor="middle" fill="#7a7f96" font-family="monospace" font-size="9">Medicamentos</text>
-      <text x="98" y="71" text-anchor="middle" fill="#7a7f96" font-family="monospace" font-size="9" id="mapCount-MZ">0 productos</text>
-      <!-- ZONA AMB (Ambiente) - arriba derecha -->
-      <rect id="mapZone-AMB" x="196" y="8" width="96" height="90" rx="5" fill="rgba(0,229,160,0.1)" stroke="#00e5a0" stroke-width="1.5"/>
-      <text x="244" y="42" text-anchor="middle" fill="#00e5a0" font-family="monospace" font-size="13" font-weight="bold">AMB</text>
-      <text x="244" y="56" text-anchor="middle" fill="#7a7f96" font-family="monospace" font-size="8">Ambiente</text>
-      <text x="244" y="68" text-anchor="middle" fill="#7a7f96" font-family="monospace" font-size="8" id="mapCount-AMB">0 prod.</text>
-      <!-- ZONA CR (Cuarto Frío) - medio -->
-      <rect id="mapZone-CR" x="8" y="106" width="180" height="72" rx="5" fill="rgba(255,184,48,0.1)" stroke="#ffb830" stroke-width="1.5"/>
-      <text x="98" y="135" text-anchor="middle" fill="#ffb830" font-family="monospace" font-size="13" font-weight="bold">CR</text>
-      <text x="98" y="149" text-anchor="middle" fill="#7a7f96" font-family="monospace" font-size="9">Cuarto Frío</text>
-      <text x="98" y="162" text-anchor="middle" fill="#7a7f96" font-family="monospace" font-size="9" id="mapCount-CR">0 productos</text>
-      <!-- ZONA CC (Cámara de Congelación) - abajo completo -->
-      <rect id="mapZone-CC" x="196" y="106" width="96" height="72" rx="5" fill="rgba(255,77,109,0.1)" stroke="#ff4d6d" stroke-width="1.5"/>
-      <text x="244" y="135" text-anchor="middle" fill="#ff4d6d" font-family="monospace" font-size="13" font-weight="bold">CC</text>
-      <text x="244" y="149" text-anchor="middle" fill="#7a7f96" font-family="monospace" font-size="8">Cám. Fría</text>
-      <text x="244" y="161" text-anchor="middle" fill="#7a7f96" font-family="monospace" font-size="8" id="mapCount-CC">0 prod.</text>
-      <!-- Entrada -->
-      <rect x="110" y="186" width="80" height="26" rx="4" fill="#22263a" stroke="#2e3247" stroke-width="1"/>
-      <text x="150" y="203" text-anchor="middle" fill="#7a7f96" font-family="monospace" font-size="10">ENTRADA</text>
-      <line x1="150" y1="178" x2="150" y2="186" stroke="#2e3247" stroke-width="1" stroke-dasharray="3"/>
-      <!-- Indicador zona activa -->
-      <circle id="mapCurrentDot" cx="0" cy="0" r="5" fill="#ffffff" opacity="0" id="mapDot"/>
-    </svg>
-    <div class="map-status-bar" id="mapStatusBar">Sin orden cargada</div>
-    <div class="map-legend">
-      <div class="map-legend-item"><div class="map-dot" style="background:#6366f1"></div>MZ — Medicamentos</div>
-      <div class="map-legend-item"><div class="map-dot" style="background:#00e5a0"></div>AMB — Ambiente</div>
-      <div class="map-legend-item"><div class="map-dot" style="background:#ffb830"></div>CR — Cuarto Frío</div>
-      <div class="map-legend-item"><div class="map-dot" style="background:#ff4d6d"></div>CC — Cámara Fría</div>
-    </div>
-  </div>
-  <button class="btn btn-secondary" onclick="goToScan()">← Volver al picking</button>
-</div>
 
 </body>
 
