@@ -786,6 +786,35 @@ if (!raw) { toast('Escanea o escribe el folio'); return; }
 
 showScreen('screenLoading');
 
+document.getElementById('loadingText').textContent = 'Verificando pedido...';
+
+// Verificar si el pedido ya fue escaneado hoy
+const isDuplicate = await checkDuplicate(raw);
+if (isDuplicate) {
+  const confirmed = await new Promise(resolve => {
+    showAreaModal(
+      `⚠️ El pedido <span style="color:var(--warn)">${raw}</span> ya fue escaneado hoy.<br><br>¿Seguro que quieres volver a iniciarlo?`,
+      () => resolve(true)
+    );
+    // Cambiar botón para dar opción de cancelar
+    setTimeout(() => {
+      const overlay = document.getElementById('areaOverlay');
+      if (overlay) {
+        const btn = overlay.querySelector('button');
+        if (btn) {
+          btn.textContent = 'SÍ, CONTINUAR →';
+          const cancelBtn = document.createElement('button');
+          cancelBtn.textContent = 'CANCELAR';
+          cancelBtn.style.cssText = 'background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:10px;padding:12px 32px;font-size:14px;font-family:var(--mono);cursor:pointer;';
+          cancelBtn.onclick = () => { overlay.style.display='none'; resolve(false); };
+          overlay.appendChild(cancelBtn);
+        }
+      }
+    }, 50);
+  });
+  if (!confirmed) { showScreen('screenScan'); return; }
+}
+
 document.getElementById('loadingText').textContent = 'Buscando orden...';
 
 try {
@@ -912,6 +941,14 @@ renderList();
 
 setActiveItem();
 
+// Mensaje inicial: a qué área dirigirse primero
+const firstPending = items.find(i => i.status === 'pending' || i.status === 'partial');
+if (firstPending) {
+  const areaName = getAreaName(firstPending.loc);
+  const msg = areaName ? `Dirígete al área de<br><strong>${areaName}</strong>` : 'Inicia el picking';
+  showAreaModal(msg, () => { document.getElementById('lotInput').focus(); });
+}
+
 }
 
 function totalPieces() { return items.reduce((s,i) => s + i.qty, 0); }
@@ -1026,9 +1063,8 @@ document.getElementById('lotInput').value = '';
 
 setTimeout(() => document.getElementById('lotInput').focus(), 100);
 
-const el = document.getElementById(`item-${idx}`);
-
-if (el) el.scrollIntoView({behavior:'smooth', block:'nearest'});
+// Scroll al tope para que siempre se vea la tarjeta activa
+window.scrollTo({top: 0, behavior: 'smooth'});
 
 }
 
@@ -1212,6 +1248,8 @@ updateProgress();
 
 function advanceNext() {
 
+const prevArea = getAreaPrefix(items[currentIdx].loc);
+
 let next = -1;
 
 for (let i = currentIdx+1; i < items.length; i++) {
@@ -1230,9 +1268,21 @@ if (items[i].status==='pending'||items[i].status==='partial') { next=i; break; }
 
 }
 
-if (next !== -1) { currentIdx = next; renderList(); setActiveItem(); }
-
-else { renderList(); }
+if (next !== -1) {
+  const nextArea = getAreaPrefix(items[next].loc);
+  if (nextArea !== prevArea) {
+    const nextAreaName = getAreaName(items[next].loc);
+    const msg = nextAreaName
+      ? `Dirígete al área de<br><strong>${nextAreaName}</strong>`
+      : 'Continúa con los productos restantes';
+    showAreaModal(msg, () => { currentIdx = next; renderList(); setActiveItem(); });
+  } else {
+    currentIdx = next; renderList(); setActiveItem();
+  }
+} else {
+  // Todos terminados
+  showAreaModal('✅ Terminaste todos los productos<br>de este pedido', () => { renderList(); updateProgress(); });
+}
 
 }
 
@@ -1429,7 +1479,55 @@ showScreen('screenSummary');
 }
 
 // ── GOOGLE SHEETS ────────────────────────────────────────
-const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwdDIOvWlvsevvT0-JtVqOjfGXjbT3atucXG3OQaOvHn50Bm841Cb3XMoovfDYBd-JzaQ/exec';
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxANrFtgoRxDGs_grP5h76T_ybLbRI0y8GFMbi6vbs1KDJeNQbHlxKYB4Ow_aRl5W08yg/exec';
+
+// ── ÁREAS ────────────────────────────────────────────────
+const PREFIX_AREA_ORDER = ['MZ','AMB','CR5','CR3','CR1','CC6','CC2'];
+const AREA_NAMES = {
+  'MZ':  'Mezanine',
+  'AMB': 'Ambiente',
+  'CR5': 'Cámara de Refrigeración 5',
+  'CR3': 'Cámara de Refrigeración 3',
+  'CR1': 'Cámara de Refrigeración 1',
+  'CC6': 'Cámara de Congelación 6',
+  'CC2': 'Cámara de Congelación 2'
+};
+function getAreaPrefix(loc) {
+  if (!loc || loc === '—') return null;
+  const upper = loc.toUpperCase();
+  return PREFIX_AREA_ORDER.find(p => upper.startsWith(p)) || null;
+}
+function getAreaName(loc) {
+  const prefix = getAreaPrefix(loc);
+  return prefix ? (AREA_NAMES[prefix] || prefix) : null;
+}
+
+function showAreaModal(message, callback) {
+  let overlay = document.getElementById('areaOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'areaOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:300;background:rgba(15,17,23,0.96);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:32px;';
+    document.body.appendChild(overlay);
+  }
+  overlay.innerHTML = `
+    <div style="font-size:48px;text-align:center;">📦</div>
+    <div style="font-family:var(--mono);font-size:16px;color:var(--accent);text-align:center;line-height:1.6;">${message}</div>
+    <button onclick="document.getElementById('areaOverlay').style.display='none';(window._areaCallback||function(){})()"
+      style="background:var(--accent);color:#0f1117;border:none;border-radius:10px;padding:14px 32px;font-size:15px;font-weight:600;font-family:var(--mono);cursor:pointer;margin-top:8px;">
+      ENTENDIDO →
+    </button>`;
+  window._areaCallback = callback;
+  overlay.style.display = 'flex';
+}
+
+async function checkDuplicate(orderName) {
+  try {
+    const res = await fetch(SHEETS_URL + '?check=' + encodeURIComponent(orderName));
+    const data = await res.json();
+    return data.exists === true;
+  } catch { return false; }
+}
 
 function fmtTime(iso) {
   if (!iso) return '—';
