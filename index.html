@@ -226,6 +226,21 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 
 .nav-tab.active{background:var(--surface2);color:var(--text);}
 
+
+/* TABLA HISTORIAL ADMIN */
+.hist-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:16px;}
+.hist-table{width:100%;border-collapse:collapse;font-size:11px;font-family:var(--mono);}
+.hist-table th{background:var(--surface2);color:var(--text2);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;letter-spacing:.05em;font-size:10px;}
+.hist-table td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top;white-space:nowrap;}
+.hist-table tr:hover td{background:var(--surface2);}
+.hist-table .td-ok{color:var(--accent);}
+.hist-table .td-err{color:var(--danger);font-weight:700;}
+.hist-table .td-warn{color:var(--warn);}
+.admin-badge{font-family:var(--mono);font-size:10px;background:rgba(99,102,241,.15);color:#a5b4fc;border:1px solid rgba(99,102,241,.3);border-radius:4px;padding:2px 8px;margin-left:8px;}
+.no-access{text-align:center;padding:48px 16px;color:var(--text2);}
+.no-access-icon{font-size:40px;margin-bottom:12px;}
+.no-access-msg{font-size:13px;line-height:1.6;}
+
 </style>
 
 </head>
@@ -526,6 +541,18 @@ let _uid = null;
 
 let _sessionId = null;
 
+// ── TIMING ─────────────────────────────────────────────
+let orderScanTime   = null;  // cuando se escanea/carga el pedido
+let firstItemTime   = null;  // primer escaneo de ítem correcto
+let lastItemTime    = null;  // último escaneo correcto
+
+// ── CONTROL DE ACCESO ──────────────────────────────────
+const ADMIN_USERS = [
+  'geo@diagnosticainternacional.com',
+  'gteoperacionaes@diagnosticainternacional.com'
+];
+function isAdmin() { return ADMIN_USERS.includes((cfg.user||'').toLowerCase().trim()); }
+
 // ── UTILS ───────────────────────────────────────────────
 
 function showScreen(id) {
@@ -559,15 +586,14 @@ function cleanCode(name) { const m = name.match(/\[([^\]]+)\]/); return m ? m[1]
 function cleanName(name) { return name.replace(/\[[^\]]+\]\s*/,''); }
 
 function showTab(tab) {
-
+if (tab === 'history' && !isAdmin()) {
+  // No-admin: solo puede hacer picking, sin historial
+  return;
+}
 document.getElementById('tabScan').style.display = tab==='scan' ? 'block' : 'none';
-
 document.getElementById('tabHistory').style.display = tab==='history' ? 'block' : 'none';
-
 document.querySelectorAll('.nav-tab').forEach((t,i) => t.classList.toggle('active', (i===0&&tab==='scan')||(i===1&&tab==='history')));
-
 if (tab === 'history') renderHistory();
-
 }
 
 // ── CONFIG ───────────────────────────────────────────────
@@ -599,6 +625,10 @@ cfg.key = document.getElementById('cfgKey').value.trim();
 localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
 
 _uid = null; _sessionId = null;
+
+// Actualizar visibilidad del tab historial según el nuevo usuario
+const histTab = document.querySelectorAll('.nav-tab')[1];
+if (histTab) histTab.style.display = isAdmin() ? '' : 'none';
 
 testConn();
 
@@ -761,6 +791,11 @@ comment: ''
 }));
 
 currentIdx = 0;
+
+// Registrar hora de escaneo del pedido y resetear tiempos de ítem
+orderScanTime = new Date();
+firstItemTime = null;
+lastItemTime  = null;
 
 setConn('ok');
 
@@ -1054,6 +1089,10 @@ document.getElementById('lotInput').value = '';
 
 if (got === expected || partialMatch) {
 
+// Registrar tiempos de escaneo de ítems
+if (!firstItemTime) firstItemTime = new Date();
+lastItemTime = new Date();
+
 item.scannedOk++;
 
 item.status = item.scannedOk >= item.qty ? 'ok' : 'partial';
@@ -1292,7 +1331,15 @@ document.getElementById('allOkMsg').style.display = 'block';
 
 // Guardar en historial
 
-saveHistory({ order, items, okPieces, errPieces, skipPieces, user: cfg.user, generalComment, date: new Date().toISOString() });
+saveHistory({
+  order, items, okPieces, errPieces, skipPieces,
+  user: cfg.user,
+  generalComment,
+  date:           new Date().toISOString(),
+  orderScanTime:  orderScanTime  ? orderScanTime.toISOString()  : null,
+  firstItemTime:  firstItemTime  ? firstItemTime.toISOString()  : null,
+  lastItemTime:   lastItemTime   ? lastItemTime.toISOString()   : null
+});
 
 showScreen('screenSummary');
 
@@ -1321,49 +1368,71 @@ localStorage.setItem(HIST_KEY, JSON.stringify(hist));
 }
 
 function renderHistory() {
+  const el = document.getElementById('historyList');
 
-const hist = JSON.parse(localStorage.getItem(HIST_KEY) || '[]');
+  if (!isAdmin()) {
+    el.innerHTML = '<div class="no-access"><div class="no-access-icon">🔒</div><div class="no-access-msg">Acceso restringido.<br>Solo supervisores pueden ver el historial.</div></div>';
+    return;
+  }
 
-const el = document.getElementById('historyList');
+  const hist = JSON.parse(localStorage.getItem(HIST_KEY) || '[]');
+  if (!hist.length) {
+    el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text2);font-size:13px;">Sin registros aún</div>';
+    return;
+  }
 
-if (!hist.length) {
+  function fmt(iso) {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  }
+  function fmtDate(iso) {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleDateString('es-MX', {day:'2-digit', month:'2-digit', year:'2-digit'});
+  }
+  function mins(from, to) {
+    if (!from || !to) return '—';
+    const diff = Math.round((new Date(to) - new Date(from)) / 60000);
+    return diff + ' min';
+  }
 
-el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text2);font-size:13px;">Sin registros aún</div>';
+  const rows = hist.map((r, i) => {
+    const hasIssues = r.errPieces > 0 || r.skipPieces > 0;
+    const anomalia  = hasIssues
+      ? `<span class="td-err">⚠ ${r.errPieces > 0 ? r.errPieces + ' err' : ''}${r.errPieces > 0 && r.skipPieces > 0 ? ' · ' : ''}${r.skipPieces > 0 ? r.skipPieces + ' omit' : ''}</span>`
+      : '<span class="td-ok">Sin anomalías</span>';
+    const user = (r.user || '—').split('@')[0];
+    const dateLabel = fmtDate(r.orderScanTime || r.date);
+    return `<tr onclick="showHistDetail(${i})" style="cursor:pointer;">
+      <td><b>${r.order?.name || '—'}</b><br><span style="color:var(--text2);font-size:10px;">${dateLabel}</span></td>
+      <td>${user}</td>
+      <td>${fmt(r.orderScanTime)}</td>
+      <td>${fmt(r.firstItemTime)}</td>
+      <td>${fmt(r.lastItemTime)}</td>
+      <td>${mins(r.orderScanTime, r.lastItemTime)}</td>
+      <td>${anomalia}</td>
+    </tr>`;
+  }).join('');
 
-return;
-
-}
-
-el.innerHTML = hist.map((r, i) => {
-
-const date = new Date(r.date).toLocaleString('es-MX');
-
-const user = r.user ? r.user.split('@')[0] : '—';
-
-const hasIssues = r.errPieces > 0 || r.skipPieces > 0;
-
-return `<div class="hist-item" onclick="showHistDetail(${i})">
-
-<div class="hist-folio">${r.order?.name || '—'}</div>
-
-<div class="hist-meta">${date} · ${user}<br>${r.order?.origin||''}</div>
-
-<div class="hist-badges">
-
-<span class="tag tag-qty">✅ ${r.okPieces} ok</span>
-
-${r.errPieces>0 ? `<span class="tag tag-exp">❌ ${r.errPieces} err</span>` : ''}
-
-${r.skipPieces>0 ? `<span class="tag tag-lot">⏭ ${r.skipPieces} omit</span>` : ''}
-
-${!hasIssues ? '<span class="tag" style="background:rgba(0,229,160,.1);color:var(--accent);border:1px solid rgba(0,229,160,.2)">Sin diferencias</span>' : ''}
-
-</div>
-
-</div>`;
-
-}).join('');
-
+  el.innerHTML = `
+    <div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-family:var(--mono);">
+      REGISTROS: ${hist.length} · ADMIN <span class="admin-badge">${(cfg.user||'').split('@')[0]}</span>
+    </div>
+    <div class="hist-table-wrap">
+      <table class="hist-table">
+        <thead>
+          <tr>
+            <th># Pedido</th>
+            <th>Usuario</th>
+            <th>Escaneo pedido</th>
+            <th>Primer ítem</th>
+            <th>Último ítem</th>
+            <th>Tiempo total</th>
+            <th>Anomalía</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
 }
 
 function showHistDetail(idx) {
@@ -1437,21 +1506,20 @@ setTimeout(() => document.getElementById('orderInput').focus(), 100);
 // ── INIT ─────────────────────────────────────────────────
 
 (async function init() {
+  // Ocultar tab de historial si no es admin
+  function updateNavVisibility() {
+    const histTab = document.querySelectorAll('.nav-tab')[1];
+    if (histTab) histTab.style.display = isAdmin() ? '' : 'none';
+  }
+  updateNavVisibility();
 
-if (cfg.url && cfg.key) {
-
-try { const uid = await getUid(); if(uid) setConn('ok'); }
-
-catch(e) { setConn('err'); }
-
-} else {
-
-setTimeout(showConfig, 400);
-
-}
-
-setTimeout(() => document.getElementById('orderInput').focus(), 300);
-
+  if (cfg.url && cfg.key) {
+    try { const uid = await getUid(); if(uid) { setConn('ok'); updateNavVisibility(); } }
+    catch(e) { setConn('err'); }
+  } else {
+    setTimeout(showConfig, 400);
+  }
+  setTimeout(() => document.getElementById('orderInput').focus(), 300);
 })();
 
 </script>
