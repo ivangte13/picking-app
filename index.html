@@ -1282,7 +1282,7 @@ if (next !== -1) {
   }
 } else {
   // Todos terminados
-  showAreaModal('✅ Terminaste todos los productos<br>de este pedido', () => { renderList(); updateProgress(); });
+  showAreaModal('✅ Terminaste todos los productos<br>de este pedido', () => { renderList(); updateProgress(); setTimeout(() => window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'}), 100); });
 }
 
 }
