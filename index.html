@@ -8,7 +8,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<title>Picking — Diagnóstica Internacional</title>
+<title>[DEV] Picking — Diagnóstica Internacional</title>
 
 <style>
 
@@ -243,6 +243,61 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 
 </style>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
+// ── EXPORTAR EXCEL ──────────────────────────────────────
+function downloadExcel() {
+  if (!isAdmin()) return;
+  const hist = JSON.parse(localStorage.getItem(HIST_KEY) || '[]');
+  if (!hist.length) { toast('Sin registros para exportar'); return; }
+
+  function fmt(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleDateString('es-MX') + ' ' + d.toLocaleTimeString('es-MX', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  }
+  function mins(from, to) {
+    if (!from || !to) return '';
+    return Math.round((new Date(to) - new Date(from)) / 60000);
+  }
+
+  const rows = hist.map(r => {
+    const anomalia = [];
+    if (r.errPieces  > 0) anomalia.push(r.errPieces  + ' lote(s) incorrecto(s)');
+    if (r.skipPieces > 0) anomalia.push(r.skipPieces + ' pieza(s) omitida(s)');
+    return {
+      '# Pedido':            r.order?.name || '',
+      'Origen':              r.order?.origin || '',
+      'Usuario':             r.user || '',
+      'Fecha':               r.orderScanTime ? new Date(r.orderScanTime).toLocaleDateString('es-MX') : '',
+      'Hora escaneo pedido': fmt(r.orderScanTime),
+      'Hora primer ítem':    fmt(r.firstItemTime),
+      'Hora último ítem':    fmt(r.lastItemTime),
+      'Tiempo total (min)':  mins(r.orderScanTime, r.lastItemTime),
+      'Piezas correctas':    r.okPieces   || 0,
+      'Errores':             r.errPieces  || 0,
+      'Omitidos':            r.skipPieces || 0,
+      'Anomalía':            anomalia.length ? anomalia.join(' · ') : 'Sin anomalías',
+      'Comentario general':  r.generalComment || ''
+    };
+  });
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+
+  // Ancho de columnas
+  ws['!cols'] = [
+    {wch:18},{wch:14},{wch:28},{wch:12},{wch:22},{wch:22},{wch:22},
+    {wch:18},{wch:16},{wch:10},{wch:10},{wch:32},{wch:30}
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Picking');
+
+  const fecha = new Date().toLocaleDateString('es-MX').replace(/\//g,'-');
+  XLSX.writeFile(wb, `picking_diagnostica_${fecha}.xlsx`);
+  toast('✅ Excel descargado');
+}
+
+</script>
 </head>
 
 <body>
@@ -299,7 +354,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 
 <div id="tabHistory" style="display:none">
 
-<div class="section-title">Pickings registrados</div>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+<div class="section-title" style="margin:0;">Pickings registrados</div>
+<button id="btnExcel" onclick="downloadExcel()" style="display:none;background:rgba(0,229,160,.12);color:var(--accent);border:1px solid rgba(0,229,160,.3);border-radius:6px;padding:6px 14px;font-family:var(--mono);font-size:11px;font-weight:600;cursor:pointer;letter-spacing:.04em;">⬇ Exportar Excel</button>
+</div>
 
 <div id="historyList"><div style="text-align:center;padding:32px;color:var(--text2);font-size:13px;">Sin registros aún</div></div>
 
@@ -1369,17 +1427,22 @@ localStorage.setItem(HIST_KEY, JSON.stringify(hist));
 
 function renderHistory() {
   const el = document.getElementById('historyList');
+  // Mostrar botón Excel solo a admins con registros
+  const btnExcel = document.getElementById('btnExcel');
 
   if (!isAdmin()) {
+    if (btnExcel) btnExcel.style.display = 'none';
     el.innerHTML = '<div class="no-access"><div class="no-access-icon">🔒</div><div class="no-access-msg">Acceso restringido.<br>Solo supervisores pueden ver el historial.</div></div>';
     return;
   }
 
   const hist = JSON.parse(localStorage.getItem(HIST_KEY) || '[]');
   if (!hist.length) {
+    if (btnExcel) btnExcel.style.display = 'none';
     el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text2);font-size:13px;">Sin registros aún</div>';
     return;
   }
+  if (btnExcel) btnExcel.style.display = '';
 
   function fmt(iso) {
     if (!iso) return '—';
