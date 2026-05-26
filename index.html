@@ -8,7 +8,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<title>Picking — Diagnóstica Internacional</title>
+<title>[DEV] Picking — Diagnóstica Internacional</title>
 
 <style>
 
@@ -243,6 +243,61 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 
 </style>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
+// ── EXPORTAR EXCEL ──────────────────────────────────────
+function downloadExcel() {
+  if (!isAdmin()) return;
+  const hist = JSON.parse(localStorage.getItem(HIST_KEY) || '[]');
+  if (!hist.length) { toast('Sin registros para exportar'); return; }
+
+  function fmt(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleDateString('es-MX') + ' ' + d.toLocaleTimeString('es-MX', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  }
+  function mins(from, to) {
+    if (!from || !to) return '';
+    return Math.round((new Date(to) - new Date(from)) / 60000);
+  }
+
+  const rows = hist.map(r => {
+    const anomalia = [];
+    if (r.errPieces  > 0) anomalia.push(r.errPieces  + ' lote(s) incorrecto(s)');
+    if (r.skipPieces > 0) anomalia.push(r.skipPieces + ' pieza(s) omitida(s)');
+    return {
+      '# Pedido':            r.order?.name || '',
+      'Origen':              r.order?.origin || '',
+      'Usuario':             (r.user||'').split('@')[0] || '',
+      'Fecha':               r.orderScanTime ? new Date(r.orderScanTime).toLocaleDateString('es-MX') : '',
+      'Hora escaneo pedido': fmt(r.orderScanTime),
+      'Hora primer ítem':    fmt(r.firstItemTime),
+      'Hora último ítem':    fmt(r.lastItemTime),
+      'Tiempo total (min)':  mins(r.orderScanTime, r.lastItemTime),
+      'Piezas correctas':    r.okPieces   || 0,
+      'Errores':             r.errPieces  || 0,
+      'Omitidos':            r.skipPieces || 0,
+      'Anomalía':            anomalia.length ? anomalia.join(' · ') : 'Sin anomalías',
+      'Comentario general':  r.generalComment || ''
+    };
+  });
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+
+  // Ancho de columnas
+  ws['!cols'] = [
+    {wch:18},{wch:14},{wch:28},{wch:12},{wch:22},{wch:22},{wch:22},
+    {wch:18},{wch:16},{wch:10},{wch:10},{wch:32},{wch:30}
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Picking');
+
+  const fecha = new Date().toLocaleDateString('es-MX').replace(/\//g,'-');
+  XLSX.writeFile(wb, `picking_diagnostica_${fecha}.xlsx`);
+  toast('✅ Excel descargado');
+}
+
+</script>
 </head>
 
 <body>
@@ -299,7 +354,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 
 <div id="tabHistory" style="display:none">
 
-<div class="section-title">Pickings registrados</div>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+<div class="section-title" style="margin:0;">Pickings registrados</div>
+<button id="btnExcel" onclick="downloadExcel()" style="display:none;background:rgba(0,229,160,.12);color:var(--accent);border:1px solid rgba(0,229,160,.3);border-radius:6px;padding:6px 14px;font-family:var(--mono);font-size:11px;font-weight:600;cursor:pointer;letter-spacing:.04em;">⬇ Exportar Excel</button>
+</div>
 
 <div id="historyList"><div style="text-align:center;padding:32px;color:var(--text2);font-size:13px;">Sin registros aún</div></div>
 
@@ -409,7 +467,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 
 </div>
 
-<input class="scan-input" id="lotInput" type="text" placeholder="Escanear código de lote..." autocomplete="off" autocorrect="off" spellcheck="false" style="margin-top:12px;">
+<input class="scan-input" id="lotInput" type="text" placeholder="Escanear código de lote..." autocomplete="off" autocorrect="off" spellcheck="false" inputmode="none" style="margin-top:12px;">
 
 <button class="skip-btn" onclick="skipItem()">Omitir producto restante →</button>
 
@@ -730,6 +788,9 @@ showScreen('screenLoading');
 
 document.getElementById('loadingText').textContent = 'Buscando orden...';
 
+// Iniciar verificación de duplicado EN PARALELO con la carga de Odoo
+const duplicatePromise = checkDuplicate(raw);
+
 try {
 
 let pickings = await odooSearch('stock.picking',
@@ -790,7 +851,57 @@ comment: ''
 
 }));
 
+// Ordenar items por ubicación: desconocidos primero, luego MZ→AMB→CR5→CR3→CR1→CC6→CC2, y dentro de cada prefijo por letra+número
+const PREFIX_ORDER = ['MZ','AMB','CR5','CR3','CR1','CC6','CC2'];
+function getLocSort(loc) {
+  if (!loc || loc === '—') return [0, '', 0];
+  const upper = loc.toUpperCase();
+  const pi = PREFIX_ORDER.findIndex(p => upper.startsWith(p));
+  if (pi === -1) return [0, '', 0]; // desconocido → primero
+  // extraer parte después del prefijo, ej: "A01" → letra='A', num=1
+  const rest = upper.slice(PREFIX_ORDER[pi].length).replace(/^[-_]/, '');
+  const letter = rest.match(/^[A-Z]+/) ? rest.match(/^[A-Z]+/)[0] : '';
+  const num = parseInt(rest.replace(/^[A-Z]+/, '')) || 0;
+  return [pi + 1, letter, num];
+}
+items.sort((a, b) => {
+  const [ap, al, an] = getLocSort(a.loc);
+  const [bp, bl, bn] = getLocSort(b.loc);
+  if (ap !== bp) return ap - bp;
+  if (al !== bl) return al < bl ? -1 : 1;
+  return an - bn;
+});
+// Re-asignar idx después del sort
+items.forEach((item, i) => { item.idx = i; });
+
 currentIdx = 0;
+
+// Esperar resultado de verificación de duplicado (ya venía corriendo en paralelo)
+document.getElementById('loadingText').textContent = 'Verificando duplicados...';
+const isDuplicate = await duplicatePromise;
+if (isDuplicate) {
+  const confirmed = await new Promise(resolve => {
+    showAreaModal(
+      `⚠️ El pedido <span style="color:var(--warn)">${raw}</span> ya fue escaneado hoy.<br><br>¿Seguro que quieres volver a iniciarlo?`,
+      () => resolve(true)
+    );
+    setTimeout(() => {
+      const overlay = document.getElementById('areaOverlay');
+      if (overlay) {
+        const btn = overlay.querySelector('button');
+        if (btn) {
+          btn.textContent = 'SÍ, CONTINUAR →';
+          const cancelBtn = document.createElement('button');
+          cancelBtn.textContent = 'CANCELAR';
+          cancelBtn.style.cssText = 'background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:10px;padding:12px 32px;font-size:14px;font-family:var(--mono);cursor:pointer;margin-top:8px;';
+          cancelBtn.onclick = () => { overlay.style.display='none'; resolve(false); };
+          overlay.appendChild(cancelBtn);
+        }
+      }
+    }, 50);
+  });
+  if (!confirmed) { showScreen('screenScan'); return; }
+}
 
 // Registrar hora de escaneo del pedido y resetear tiempos de ítem
 orderScanTime = new Date();
@@ -830,6 +941,14 @@ updateProgress();
 renderList();
 
 setActiveItem();
+
+// Mensaje inicial: a qué área dirigirse primero
+const firstPending = items.find(i => i.status === 'pending' || i.status === 'partial');
+if (firstPending) {
+  const areaName = getAreaName(firstPending.loc);
+  const msg = areaName ? `Dirígete al área de<br><strong>${areaName}</strong>` : 'Inicia el picking';
+  showAreaModal(msg, () => { document.getElementById('lotInput').focus(); });
+}
 
 }
 
@@ -945,9 +1064,8 @@ document.getElementById('lotInput').value = '';
 
 setTimeout(() => document.getElementById('lotInput').focus(), 100);
 
-const el = document.getElementById(`item-${idx}`);
-
-if (el) el.scrollIntoView({behavior:'smooth', block:'nearest'});
+// Scroll al tope para que siempre se vea la tarjeta activa
+window.scrollTo({top: 0, behavior: 'smooth'});
 
 }
 
@@ -1131,6 +1249,8 @@ updateProgress();
 
 function advanceNext() {
 
+const prevArea = getAreaPrefix(items[currentIdx].loc);
+
 let next = -1;
 
 for (let i = currentIdx+1; i < items.length; i++) {
@@ -1149,9 +1269,21 @@ if (items[i].status==='pending'||items[i].status==='partial') { next=i; break; }
 
 }
 
-if (next !== -1) { currentIdx = next; renderList(); setActiveItem(); }
-
-else { renderList(); }
+if (next !== -1) {
+  const nextArea = getAreaPrefix(items[next].loc);
+  if (nextArea !== prevArea) {
+    const nextAreaName = getAreaName(items[next].loc);
+    const msg = nextAreaName
+      ? `Dirígete al área de<br><strong>${nextAreaName}</strong>`
+      : 'Continúa con los productos restantes';
+    showAreaModal(msg, () => { currentIdx = next; renderList(); setActiveItem(); });
+  } else {
+    currentIdx = next; renderList(); setActiveItem();
+  }
+} else {
+  // Todos terminados
+  showAreaModal('✅ Terminaste todos los productos<br>de este pedido', () => { renderList(); updateProgress(); setTimeout(() => window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'}), 100); });
+}
 
 }
 
@@ -1330,19 +1462,104 @@ document.getElementById('allOkMsg').style.display = 'block';
 }
 
 // Guardar en historial
-
-saveHistory({
+const finishDate = new Date();
+const record = {
   order, items, okPieces, errPieces, skipPieces,
   user: cfg.user,
   generalComment,
-  date:           new Date().toISOString(),
+  date:           finishDate.toISOString(),
   orderScanTime:  orderScanTime  ? orderScanTime.toISOString()  : null,
   firstItemTime:  firstItemTime  ? firstItemTime.toISOString()  : null,
   lastItemTime:   lastItemTime   ? lastItemTime.toISOString()   : null
-});
+};
+saveHistory(record);
+sendToSheets(record);
 
 showScreen('screenSummary');
 
+}
+
+// ── GOOGLE SHEETS ────────────────────────────────────────
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxANrFtgoRxDGs_grP5h76T_ybLbRI0y8GFMbi6vbs1KDJeNQbHlxKYB4Ow_aRl5W08yg/exec';
+
+// ── ÁREAS ────────────────────────────────────────────────
+const PREFIX_AREA_ORDER = ['MZ','AMB','CR5','CR3','CR1','CC6','CC2'];
+const AREA_NAMES = {
+  'MZ':  'Mezanine',
+  'AMB': 'Ambiente',
+  'CR5': 'Cámara de Refrigeración 5',
+  'CR3': 'Cámara de Refrigeración 3',
+  'CR1': 'Cámara de Refrigeración 1',
+  'CC6': 'Cámara de Congelación 6',
+  'CC2': 'Cámara de Congelación 2'
+};
+function getAreaPrefix(loc) {
+  if (!loc || loc === '—') return null;
+  const upper = loc.toUpperCase();
+  return PREFIX_AREA_ORDER.find(p => upper.startsWith(p)) || null;
+}
+function getAreaName(loc) {
+  const prefix = getAreaPrefix(loc);
+  return prefix ? (AREA_NAMES[prefix] || prefix) : null;
+}
+
+function showAreaModal(message, callback) {
+  let overlay = document.getElementById('areaOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'areaOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:300;background:rgba(15,17,23,0.96);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:32px;';
+    document.body.appendChild(overlay);
+  }
+  overlay.innerHTML = `
+    <div style="font-size:48px;text-align:center;">📦</div>
+    <div style="font-family:var(--mono);font-size:16px;color:var(--accent);text-align:center;line-height:1.6;">${message}</div>
+    <button onclick="document.getElementById('areaOverlay').style.display='none';(window._areaCallback||function(){})()"
+      style="background:var(--accent);color:#0f1117;border:none;border-radius:10px;padding:14px 32px;font-size:15px;font-weight:600;font-family:var(--mono);cursor:pointer;margin-top:8px;">
+      ENTENDIDO →
+    </button>`;
+  window._areaCallback = callback;
+  overlay.style.display = 'flex';
+}
+
+async function checkDuplicate(orderName) {
+  try {
+    const res = await fetch(SHEETS_URL + '?check=' + encodeURIComponent(orderName));
+    const data = await res.json();
+    return data.exists === true;
+  } catch { return false; }
+}
+
+function fmtTime(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+}
+
+function sendToSheets(record) {
+  const minutos = (record.orderScanTime && record.lastItemTime)
+    ? ((new Date(record.lastItemTime) - new Date(record.orderScanTime)) / 60000).toFixed(1)
+    : '—';
+  const anomalia = [];
+  if (record.errPieces  > 0) anomalia.push(record.errPieces  + ' lote(s) incorrecto(s)');
+  if (record.skipPieces > 0) anomalia.push(record.skipPieces + ' pieza(s) omitida(s)');
+
+  const payload = {
+    order:         record.order?.name || record.order || '—',
+    user:          (record.user || '—').split('@')[0],
+    date:          new Date(record.date).toLocaleDateString('es-MX'),
+    orderScanTime: fmtTime(record.orderScanTime),
+    firstItemTime: fmtTime(record.firstItemTime),
+    lastItemTime:  fmtTime(record.lastItemTime),
+    minutes:       minutos,
+    anomalia:      anomalia.length ? anomalia.join(' · ') : 'Sin anomalías'
+  };
+
+  fetch(SHEETS_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  }).catch(() => {}); // silencioso, no bloquea la app
 }
 
 // ── HISTORIAL ────────────────────────────────────────────
@@ -1369,17 +1586,22 @@ localStorage.setItem(HIST_KEY, JSON.stringify(hist));
 
 function renderHistory() {
   const el = document.getElementById('historyList');
+  // Mostrar botón Excel solo a admins con registros
+  const btnExcel = document.getElementById('btnExcel');
 
   if (!isAdmin()) {
+    if (btnExcel) btnExcel.style.display = 'none';
     el.innerHTML = '<div class="no-access"><div class="no-access-icon">🔒</div><div class="no-access-msg">Acceso restringido.<br>Solo supervisores pueden ver el historial.</div></div>';
     return;
   }
 
   const hist = JSON.parse(localStorage.getItem(HIST_KEY) || '[]');
   if (!hist.length) {
+    if (btnExcel) btnExcel.style.display = 'none';
     el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text2);font-size:13px;">Sin registros aún</div>';
     return;
   }
+  if (btnExcel) btnExcel.style.display = '';
 
   function fmt(iso) {
     if (!iso) return '—';
@@ -1445,7 +1667,7 @@ if (!r) return;
 
 const date = new Date(r.date).toLocaleString('es-MX');
 
-let detail = `Orden: ${r.order?.name}\nFecha: ${date}\nAlmacenista: ${r.user}\n`;
+let detail = `Orden: ${r.order?.name}\nFecha: ${date}\nAlmacenista: ${(r.user||'').split('@')[0]}\n`;
 
 detail += `\nResumen: ✅ ${r.okPieces} correctas · ❌ ${r.errPieces} errores · ⏭ ${r.skipPieces} omitidas\n`;
 
