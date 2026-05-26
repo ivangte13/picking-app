@@ -1411,19 +1411,56 @@ document.getElementById('allOkMsg').style.display = 'block';
 }
 
 // Guardar en historial
-
-saveHistory({
+const finishDate = new Date();
+const record = {
   order, items, okPieces, errPieces, skipPieces,
   user: cfg.user,
   generalComment,
-  date:           new Date().toISOString(),
+  date:           finishDate.toISOString(),
   orderScanTime:  orderScanTime  ? orderScanTime.toISOString()  : null,
   firstItemTime:  firstItemTime  ? firstItemTime.toISOString()  : null,
   lastItemTime:   lastItemTime   ? lastItemTime.toISOString()   : null
-});
+};
+saveHistory(record);
+sendToSheets(record);
 
 showScreen('screenSummary');
 
+}
+
+// ── GOOGLE SHEETS ────────────────────────────────────────
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwdDIOvWlvsevvT0-JtVqOjfGXjbT3atucXG3OQaOvHn50Bm841Cb3XMoovfDYBd-JzaQ/exec';
+
+function fmtTime(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+}
+
+function sendToSheets(record) {
+  const minutos = (record.orderScanTime && record.lastItemTime)
+    ? ((new Date(record.lastItemTime) - new Date(record.orderScanTime)) / 60000).toFixed(1)
+    : '—';
+  const anomalia = [];
+  if (record.errPieces  > 0) anomalia.push(record.errPieces  + ' lote(s) incorrecto(s)');
+  if (record.skipPieces > 0) anomalia.push(record.skipPieces + ' pieza(s) omitida(s)');
+
+  const payload = {
+    order:         record.order?.name || record.order || '—',
+    user:          (record.user || '—').split('@')[0],
+    date:          new Date(record.date).toLocaleDateString('es-MX'),
+    orderScanTime: fmtTime(record.orderScanTime),
+    firstItemTime: fmtTime(record.firstItemTime),
+    lastItemTime:  fmtTime(record.lastItemTime),
+    minutes:       minutos,
+    anomalia:      anomalia.length ? anomalia.join(' · ') : 'Sin anomalías'
+  };
+
+  fetch(SHEETS_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  }).catch(() => {}); // silencioso, no bloquea la app
 }
 
 // ── HISTORIAL ────────────────────────────────────────────
