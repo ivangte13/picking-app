@@ -8,7 +8,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<title>[DEV] Picking — Diagnóstica Internacional</title>
+<title>Picking — Diagnóstica Internacional</title>
 
 <style>
 
@@ -16,15 +16,15 @@
 
 :root {
 
---bg:#0f1117;--surface:#1a1d27;--surface2:#22263a;--border:#2e3247;
+--bg:#FFFFFF;--surface:#F4F7FB;--surface2:#E8EFF8;--border:#C8D6EC;
 
---accent:#00e5a0;--accent-dim:rgba(0,229,160,0.12);
+--accent:#1E509E;--accent-dim:rgba(30,80,158,0.08);
 
---danger:#ff4d6d;--danger-dim:rgba(255,77,109,0.12);
+--danger:#C0392B;--danger-dim:rgba(192,57,43,0.08);
 
---warn:#ffb830;--warn-dim:rgba(255,184,48,0.12);
+--warn:#D97706;--warn-dim:rgba(217,119,6,0.10);
 
---text:#e8eaf0;--text2:#7a7f96;
+--text:#1A2540;--text2:#6B7A99;
 
 --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;--radius:10px;
 
@@ -36,7 +36,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 
 .header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;}
 
-.header-logo{width:28px;height:28px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:600;color:#0f1117;flex-shrink:0;}
+.header-logo{width:28px;height:28px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:600;color:#FFFFFF;flex-shrink:0;}
 
 .header-title{font-size:13px;font-weight:600;color:var(--text);letter-spacing:.02em;}
 
@@ -46,7 +46,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 
 .conn-dot{width:7px;height:7px;border-radius:50%;background:var(--text2);transition:background .3s;}
 
-.conn-dot.ok{background:var(--accent);box-shadow:0 0 6px var(--accent);}
+.conn-dot.ok{background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,0.6);}
 
 .conn-dot.err{background:var(--danger);}
 
@@ -70,7 +70,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 
 .btn:active{transform:scale(.98);opacity:.85;}
 
-.btn-primary{background:var(--accent);color:#0f1117;margin-top:12px;}
+.btn-primary{background:var(--accent);color:#FFFFFF;margin-top:12px;}
 
 .btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);margin-top:8px;}
 
@@ -122,7 +122,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 
 .scan-active-card{background:var(--surface);border:1.5px solid var(--accent);border-radius:var(--radius);padding:20px 16px;margin-bottom:16px;animation:pulse-border 1.5s ease-in-out infinite;}
 
-@keyframes pulse-border{0%,100%{border-color:var(--accent);box-shadow:0 0 0 0 var(--accent-dim);}50%{border-color:rgba(0,229,160,.5);box-shadow:0 0 0 4px var(--accent-dim);}}
+@keyframes pulse-border{0%,100%{border-color:var(--accent);box-shadow:0 0 0 0 var(--accent-dim);}50%{border-color:rgba(30,80,158,.4);box-shadow:0 0 0 4px var(--accent-dim);}}
 
 .scan-active-title{font-size:11px;color:var(--accent);font-family:var(--mono);letter-spacing:.08em;margin-bottom:6px;text-transform:uppercase;}
 
@@ -144,17 +144,17 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 
 @keyframes flash-in{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
 
-.result-flash.ok-flash{background:rgba(0,229,160,.95);}
+.result-flash.ok-flash{background:rgba(21,96,52,.95);}
 
-.result-flash.err-flash{background:rgba(255,77,109,.95);}
+.result-flash.err-flash{background:rgba(192,57,43,.95);}
 
 .result-flash-icon{font-size:80px;}
 
-.result-flash-msg{font-size:22px;font-weight:700;color:#0f1117;text-align:center;padding:0 24px;}
+.result-flash-msg{font-size:22px;font-weight:700;color:#FFFFFF;text-align:center;padding:0 24px;}
 
-.result-flash-sub{font-size:13px;color:rgba(0,0,0,.6);font-family:var(--mono);text-align:center;padding:0 24px;}
+.result-flash-sub{font-size:13px;color:rgba(255,255,255,.75);font-family:var(--mono);text-align:center;padding:0 24px;}
 
-.summary-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;}
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
 
 .summary-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 10px;text-align:center;}
 
@@ -220,11 +220,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 
 .hist-badges{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
 
-.nav-tabs{display:flex;gap:2px;margin-bottom:16px;background:var(--surface);border-radius:8px;padding:3px;}
-
-.nav-tab{flex:1;padding:8px;border:none;background:none;color:var(--text2);font-size:12px;font-family:var(--sans);border-radius:6px;cursor:pointer;transition:background .2s,color .2s;}
-
-.nav-tab.active{background:var(--surface2);color:var(--text);}
 
 
 /* TABLA HISTORIAL ADMIN */
@@ -236,7 +231,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 .hist-table .td-ok{color:var(--accent);}
 .hist-table .td-err{color:var(--danger);font-weight:700;}
 .hist-table .td-warn{color:var(--warn);}
-.admin-badge{font-family:var(--mono);font-size:10px;background:rgba(99,102,241,.15);color:#a5b4fc;border:1px solid rgba(99,102,241,.3);border-radius:4px;padding:2px 8px;margin-left:8px;}
+.admin-badge{font-family:var(--mono);font-size:10px;background:var(--accent-dim);color:var(--accent);border:1px solid rgba(30,80,158,.25);border-radius:4px;padding:2px 8px;margin-left:8px;}
 .no-access{text-align:center;padding:48px 16px;color:var(--text2);}
 .no-access-icon{font-size:40px;margin-bottom:12px;}
 .no-access-msg{font-size:13px;line-height:1.6;}
@@ -261,9 +256,14 @@ function downloadExcel() {
   }
 
   const rows = hist.map(r => {
-    const anomalia = [];
-    if (r.errPieces  > 0) anomalia.push(r.errPieces  + ' lote(s) incorrecto(s)');
-    if (r.skipPieces > 0) anomalia.push(r.skipPieces + ' pieza(s) omitida(s)');
+    const skipped = (r.items || []).filter(i => i.status === 'skip' || i.status === 'partial');
+    const anomalia = skipped.length > 0
+      ? skipped.map(i => {
+          const pza = i.qty - (i.scannedOk || 0);
+          const motivo = i.comment ? i.comment : 'Sin motivo';
+          return `⏭ ${cleanName(i.name)} · ${pza} pza — ${motivo}`;
+        }).join(' | ')
+      : 'Sin anomalías';
     return {
       '# Pedido':            r.order?.name || '',
       'Origen':              r.order?.origin || '',
@@ -274,10 +274,8 @@ function downloadExcel() {
       'Hora último ítem':    fmt(r.lastItemTime),
       'Tiempo total (min)':  mins(r.orderScanTime, r.lastItemTime),
       'Piezas correctas':    r.okPieces   || 0,
-      'Errores':             r.errPieces  || 0,
       'Omitidos':            r.skipPieces || 0,
-      'Anomalía':            anomalia.length ? anomalia.join(' · ') : 'Sin anomalías',
-      'Comentario general':  r.generalComment || ''
+      'Anomalía':            anomalia
     };
   });
 
@@ -326,14 +324,6 @@ function downloadExcel() {
 
 <div class="screen active" id="screenScan">
 
-<div class="nav-tabs">
-
-<button class="nav-tab active" onclick="showTab('scan')">📦 Picking</button>
-
-<button class="nav-tab" onclick="showTab('history')">📋 Historial</button>
-
-</div>
-
 <div id="tabScan">
 
 <div class="scan-card">
@@ -342,9 +332,11 @@ function downloadExcel() {
 
 <div class="scan-label">Escanea el código de barras<br>de la orden de entrega</div>
 
-<input class="scan-input" id="orderInput" type="text" placeholder="Escanear o escribir folio..." autocomplete="off" autocorrect="off" spellcheck="false">
+<input class="scan-input" id="orderInput" type="text" placeholder="Escanear folio..." autocomplete="off" autocorrect="off" spellcheck="false" inputmode="none">
 
 <button class="btn btn-primary" onclick="loadOrder()">Cargar orden</button>
+
+<button class="btn btn-secondary" onclick="enableManualOrder()" style="margin-top:8px;font-size:13px;">✏️ Ingresar manualmente</button>
 
 <button class="btn btn-secondary" onclick="showConfig()">⚙ Configuración</button>
 
@@ -477,34 +469,6 @@ function downloadExcel() {
 
 <div id="productList"></div>
 
-<button class="btn btn-primary" id="finishBtn" onclick="goToObservations()" style="display:none;margin-top:16px;">Continuar al resumen →</button>
-
-</div>
-
-<!-- SCREEN OBSERVACIONES -->
-
-<div class="screen" id="screenObs">
-
-<div class="section-title">Observaciones finales</div>
-
-<div class="order-banner">
-
-<div class="order-folio" id="obsFolio"></div>
-
-</div>
-
-<div id="obsList"></div>
-
-<div style="margin-top:16px;">
-
-<div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-family:var(--mono);">COMENTARIO GENERAL (opcional)</div>
-
-<textarea class="comment-input" id="generalComment" rows="3" placeholder="Alguna observación general del picking..."></textarea>
-
-</div>
-
-<button class="btn btn-primary" onclick="showSummary()" style="margin-top:16px;">Ver resumen final</button>
-
 </div>
 
 <!-- SCREEN RESUMEN -->
@@ -524,8 +488,6 @@ function downloadExcel() {
 <div class="summary-grid">
 
 <div class="summary-card ok-card"><div class="summary-num" id="sumOk">0</div><div class="summary-lbl">Correctas</div></div>
-
-<div class="summary-card err-card"><div class="summary-num" id="sumErr">0</div><div class="summary-lbl">Errores</div></div>
 
 <div class="summary-card warn-card"><div class="summary-num" id="sumSkip">0</div><div class="summary-lbl">Omitidas</div></div>
 
@@ -549,7 +511,7 @@ function downloadExcel() {
 
 </div>
 
-<button class="btn btn-primary" onclick="newPicking()" style="margin-top:20px;">Nueva orden</button>
+<button class="btn btn-primary" onclick="newPicking()" style="margin-top:20px;">Iniciar otro pedido →</button>
 
 </div>
 
@@ -587,7 +549,7 @@ if (!cfg.key) cfg.key = '';
 
 let order = null;
 
-// item: {id, name, lot, qty, loc, exp, scannedOk, scannedWrong, status, comment}
+// item: {id, name, lot, qty, loc, exp, scannedOk, status, comment}
 
 // status: 'pending' | 'partial' | 'ok' | 'error' | 'skip'
 
@@ -618,6 +580,10 @@ function showScreen(id) {
 document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
 
 document.getElementById(id).classList.add('active');
+
+const header = document.querySelector('.header');
+
+if (header) header.style.display = (id === 'screenPicking' || id === 'screenSummary') ? 'none' : '';
 
 }
 
@@ -684,15 +650,32 @@ localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
 
 _uid = null; _sessionId = null;
 
-// Actualizar visibilidad del tab historial según el nuevo usuario
-const histTab = document.querySelectorAll('.nav-tab')[1];
-if (histTab) histTab.style.display = isAdmin() ? '' : 'none';
-
 testConn();
 
 }
 
 function goToScan() { showScreen('screenScan'); }
+
+// Bloquear teclado virtual en orderInput salvo modo manual
+(function() {
+  const inp = document.getElementById('orderInput');
+  if (!inp) return;
+  inp.addEventListener('touchstart', function(e) {
+    if (inp.getAttribute('inputmode') !== 'text') {
+      e.preventDefault();
+      inp.focus();
+    }
+  }, { passive: false });
+})();
+
+function enableManualOrder() {
+  const input = document.getElementById('orderInput');
+  input.setAttribute('inputmode', 'text');
+  input.focus();
+  input.addEventListener('blur', () => {
+    input.setAttribute('inputmode', 'none');
+  }, { once: true });
+}
 
 async function testConn() {
 
@@ -843,8 +826,6 @@ exp: m.expiration_date ? m.expiration_date.substring(0,10) : null,
 
 scannedOk: 0,
 
-scannedWrong: 0,
-
 status: 'pending',
 
 comment: ''
@@ -970,8 +951,6 @@ document.getElementById('progressLabel').textContent = `${done} / ${total} pieza
 
 const allDone = items.every(i => i.status !== 'pending' && i.status !== 'partial');
 
-document.getElementById('finishBtn').style.display = allDone ? 'block' : 'none';
-
 document.getElementById('activeCard').style.display = allDone ? 'none' : 'block';
 
 }
@@ -992,7 +971,7 @@ div.className = `product-item ${isActive ? 'active' : item.status}`;
 
 div.id = `item-${i}`;
 
-const statusIcon = {ok:'✅', error:'❌', skip:'⏭', partial:'🔄', pending:''}[item.status]||'';
+const statusIcon = {ok:'✅', skip:'⏭', partial:'🔄', pending:''}[item.status]||'';
 
 const expTag = item.exp ? `<span class="tag tag-exp">Cad: ${item.exp}</span>` : '';
 
@@ -1024,7 +1003,6 @@ ${expTag}${progressTag}
 
 </div>
 
-${item.status==='error' ? `<div style="font-size:11px;color:var(--danger);margin-top:8px;font-family:var(--mono);">Lote incorrecto escaneado</div>` : ''}
 
 ${retryBtn}`;
 
@@ -1233,8 +1211,6 @@ renderList();
 
 } else {
 
-item.scannedWrong++;
-
 // NO avanzar — quedarse en el mismo item
 
 showFlash('err','❌','Lote incorrecto', `Esperado: ${item.lot}`);
@@ -1281,23 +1257,60 @@ if (next !== -1) {
     currentIdx = next; renderList(); setActiveItem();
   }
 } else {
-  // Todos terminados
-  showAreaModal('✅ Terminaste todos los productos<br>de este pedido', () => { renderList(); updateProgress(); setTimeout(() => window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'}), 100); });
+  // Todos terminados → auto-finalizar
+  showAreaModal('✅ Terminaste todos los productos<br>de este pedido', () => {
+    finishPicking();
+  });
 }
 
+}
+
+function showSkipModal(onConfirm, onCancel) {
+  let overlay = document.getElementById('areaOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'areaOverlay';
+    document.body.appendChild(overlay);
+  }
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:300;background:rgba(255,255,255,0.98);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px;';
+  overlay.innerHTML = `
+    <div style="font-size:40px;text-align:center;">⏭</div>
+    <div style="font-family:var(--mono);font-size:15px;color:var(--text);text-align:center;line-height:1.6;font-weight:600;">¿Por qué omites este producto?</div>
+    <textarea id="skipReasonInput" rows="3"
+      style="width:100%;max-width:320px;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--sans);font-size:14px;padding:10px 12px;outline:none;resize:none;"
+      placeholder="Escribe el motivo..."></textarea>
+    <button id="skipConfirmBtn"
+      style="background:var(--warn);color:#FFFFFF;border:none;border-radius:10px;padding:14px 32px;font-size:15px;font-weight:600;font-family:var(--mono);cursor:pointer;width:100%;max-width:320px;">
+      OMITIR →
+    </button>
+    <button id="skipCancelBtn"
+      style="background:transparent;color:var(--text2);border:1.5px solid var(--border);border-radius:10px;padding:12px 32px;font-size:14px;font-family:var(--mono);cursor:pointer;width:100%;max-width:320px;">
+      CANCELAR
+    </button>`;
+  overlay.style.display = 'flex';
+  document.getElementById('skipConfirmBtn').onclick = () => {
+    const reason = document.getElementById('skipReasonInput').value.trim();
+    overlay.style.display = 'none';
+    onConfirm(reason);
+  };
+  document.getElementById('skipCancelBtn').onclick = () => {
+    overlay.style.display = 'none';
+    if (onCancel) onCancel();
+  };
+  setTimeout(() => document.getElementById('skipReasonInput')?.focus(), 100);
 }
 
 function skipItem() {
 
 if (currentIdx >= items.length) return;
 
-items[currentIdx].status = 'skip';
-
-advanceNext();
-
-updateProgress();
-
-renderList();
+showSkipModal((reason) => {
+  items[currentIdx].status = 'skip';
+  items[currentIdx].comment = reason;
+  advanceNext();
+  updateProgress();
+  renderList();
+});
 
 }
 
@@ -1305,11 +1318,9 @@ function retryItem(idx) {
 
 items[idx].status = items[idx].scannedOk > 0 ? 'partial' : 'pending';
 
-items[idx].scannedWrong = 0;
+items[idx].comment = '';
 
 currentIdx = idx;
-
-document.getElementById('finishBtn').style.display = 'none';
 
 document.getElementById('activeCard').style.display = 'block';
 
@@ -1321,65 +1332,15 @@ setActiveItem();
 
 }
 
-// ── OBSERVACIONES ─────────────────────────────────────────
+// ── FINALIZAR PICKING ─────────────────────────────────────
 
-function goToObservations() {
+function finishPicking() {
 
-const issueItems = items.filter(i => i.status==='error'||i.status==='skip');
-
-document.getElementById('obsFolio').textContent = order.name;
-
-const obsList = document.getElementById('obsList');
-
-obsList.innerHTML = '';
-
-if (issueItems.length === 0) {
-
-obsList.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text2);font-size:13px;">Sin productos con problemas</div>';
-
-} else {
-
-issueItems.forEach(item => {
-
-const div = document.createElement('div');
-
-div.className = `issue-item ${item.status==='skip'?'skip-issue':''}`;
-
-div.innerHTML = `
-
-<div class="issue-item-name ${item.status==='error'?'err':'skip'}">${item.status==='error'?'❌':'⏭'} ${cleanName(item.name)}</div>
-
-<div class="issue-item-detail">Lote: ${item.lot} · Cantidad: ${item.qty} pza${item.scannedOk>0?` · Escaneadas: ${item.scannedOk}`:''}</div>
-
-<textarea class="comment-input" rows="2" placeholder="Observación (opcional)..." oninput="items[${item.idx}].comment=this.value">${item.comment}</textarea>`;
-
-obsList.appendChild(div);
-
-});
-
-}
-
-document.getElementById('generalComment').value = '';
-
-showScreen('screenObs');
-
-}
-
-// ── RESUMEN ──────────────────────────────────────────────
-
-function showSummary() {
-
-const generalComment = document.getElementById('generalComment').value.trim();
-
-// Count by pieces
-
-let okPieces = 0, errPieces = 0, skipPieces = 0;
+let okPieces = 0, skipPieces = 0;
 
 items.forEach(item => {
 
 if (item.status==='ok') okPieces += item.qty;
-
-else if (item.status==='error') { okPieces += item.scannedOk; errPieces += (item.qty - item.scannedOk + item.scannedWrong); }
 
 else if (item.status==='skip') { okPieces += item.scannedOk; skipPieces += (item.qty - item.scannedOk); }
 
@@ -1387,9 +1348,39 @@ else if (item.status==='partial') { okPieces += item.scannedOk; skipPieces += (i
 
 });
 
-document.getElementById('sumOk').textContent = okPieces;
+const finishDate = new Date();
 
-document.getElementById('sumErr').textContent = errPieces;
+const record = {
+
+order, items, okPieces, skipPieces,
+
+user: cfg.user,
+
+date:           finishDate.toISOString(),
+
+orderScanTime:  orderScanTime  ? orderScanTime.toISOString()  : null,
+
+firstItemTime:  firstItemTime  ? firstItemTime.toISOString()  : null,
+
+lastItemTime:   lastItemTime   ? lastItemTime.toISOString()   : null
+
+};
+
+saveHistory(record);
+
+sendToSheets(record);
+
+showSummary(record);
+
+}
+
+// ── RESUMEN ──────────────────────────────────────────────
+
+function showSummary(record) {
+
+const { okPieces, skipPieces } = record;
+
+document.getElementById('sumOk').textContent = okPieces;
 
 document.getElementById('sumSkip').textContent = skipPieces;
 
@@ -1401,53 +1392,31 @@ document.getElementById('summaryMeta').textContent =
 
 `${partnerName} · ${new Date().toLocaleString('es-MX')} · Almacenista: ${cfg.user.split('@')[0]}`;
 
-const issueItems = items.filter(i => i.status!=='ok');
+const skipItems = items.filter(i => i.status==='skip' || i.status==='partial');
 
 const issueList = document.getElementById('issueList');
 
 issueList.innerHTML = '';
 
-if (issueItems.length > 0) {
+if (skipItems.length > 0) {
 
 document.getElementById('issueListWrap').style.display = 'block';
 
 document.getElementById('allOkMsg').style.display = 'none';
 
-issueItems.forEach(item => {
+skipItems.forEach(item => {
 
-let piecesAffected = 0;
-
-let detail = '';
-
-if (item.status==='error') {
-
-piecesAffected = item.qty - item.scannedOk + item.scannedWrong;
-
-detail = `Lote: ${item.lot} · ${piecesAffected} pieza(s) con error`;
-
-} else if (item.status==='skip') {
-
-piecesAffected = item.qty - item.scannedOk;
-
-detail = `Omitido · ${piecesAffected} pieza(s) faltante(s)`;
-
-} else if (item.status==='partial') {
-
-piecesAffected = item.qty - item.scannedOk;
-
-detail = `Incompleto · ${piecesAffected} pieza(s) faltante(s)`;
-
-}
+const piezasFaltantes = item.qty - item.scannedOk;
 
 const div = document.createElement('div');
 
-div.className = `issue-item ${item.status==='skip'||item.status==='partial'?'skip-issue':''}`;
+div.className = 'issue-item skip-issue';
 
 div.innerHTML = `
 
-<div class="issue-item-name ${item.status==='error'?'err':'skip'}">${item.status==='error'?'❌':'⏭'} ${cleanName(item.name)} <span style="font-size:10px;opacity:.7">(${piecesAffected} pza)</span></div>
+<div class="issue-item-name skip">⏭ ${cleanName(item.name)} <span style="font-size:10px;opacity:.7">(${piezasFaltantes} pza)</span></div>
 
-<div class="issue-item-detail">${detail}${item.comment ? `\nObservación: ${item.comment}` : ''}</div>`;
+<div class="issue-item-detail">Omitido · ${piezasFaltantes} pieza(s) faltante(s)${item.comment ? `\nMotivo: ${item.comment}` : ''}</div>`;
 
 issueList.appendChild(div);
 
@@ -1461,21 +1430,9 @@ document.getElementById('allOkMsg').style.display = 'block';
 
 }
 
-// Guardar en historial
-const finishDate = new Date();
-const record = {
-  order, items, okPieces, errPieces, skipPieces,
-  user: cfg.user,
-  generalComment,
-  date:           finishDate.toISOString(),
-  orderScanTime:  orderScanTime  ? orderScanTime.toISOString()  : null,
-  firstItemTime:  firstItemTime  ? firstItemTime.toISOString()  : null,
-  lastItemTime:   lastItemTime   ? lastItemTime.toISOString()   : null
-};
-saveHistory(record);
-sendToSheets(record);
-
 showScreen('screenSummary');
+
+setTimeout(() => window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'}), 150);
 
 }
 
@@ -1508,14 +1465,14 @@ function showAreaModal(message, callback) {
   if (!overlay) {
     overlay = document.createElement('div');
     overlay.id = 'areaOverlay';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:300;background:rgba(15,17,23,0.96);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:32px;';
     document.body.appendChild(overlay);
   }
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:300;background:rgba(255,255,255,0.98);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:32px;';
   overlay.innerHTML = `
     <div style="font-size:48px;text-align:center;">📦</div>
-    <div style="font-family:var(--mono);font-size:16px;color:var(--accent);text-align:center;line-height:1.6;">${message}</div>
+    <div style="font-family:var(--mono);font-size:16px;color:var(--text);text-align:center;line-height:1.6;font-weight:600;">${message}</div>
     <button onclick="document.getElementById('areaOverlay').style.display='none';(window._areaCallback||function(){})()"
-      style="background:var(--accent);color:#0f1117;border:none;border-radius:10px;padding:14px 32px;font-size:15px;font-weight:600;font-family:var(--mono);cursor:pointer;margin-top:8px;">
+      style="background:var(--accent);color:#FFFFFF;border:none;border-radius:10px;padding:14px 32px;font-size:15px;font-weight:600;font-family:var(--mono);cursor:pointer;margin-top:8px;">
       ENTENDIDO →
     </button>`;
   window._areaCallback = callback;
@@ -1539,9 +1496,14 @@ function sendToSheets(record) {
   const minutos = (record.orderScanTime && record.lastItemTime)
     ? ((new Date(record.lastItemTime) - new Date(record.orderScanTime)) / 60000).toFixed(1)
     : '—';
-  const anomalia = [];
-  if (record.errPieces  > 0) anomalia.push(record.errPieces  + ' lote(s) incorrecto(s)');
-  if (record.skipPieces > 0) anomalia.push(record.skipPieces + ' pieza(s) omitida(s)');
+  const skipped = (record.items || []).filter(i => i.status === 'skip' || i.status === 'partial');
+  const anomalia = skipped.length > 0
+    ? skipped.map(i => {
+        const pza = i.qty - (i.scannedOk || 0);
+        const motivo = i.comment ? i.comment : 'Sin motivo';
+        return `⏭ ${cleanName(i.name)} · ${pza} pza — ${motivo}`;
+      }).join(' | ')
+    : 'Sin anomalías';
 
   const payload = {
     order:         record.order?.name || record.order || '—',
@@ -1551,7 +1513,7 @@ function sendToSheets(record) {
     firstItemTime: fmtTime(record.firstItemTime),
     lastItemTime:  fmtTime(record.lastItemTime),
     minutes:       minutos,
-    anomalia:      anomalia.length ? anomalia.join(' · ') : 'Sin anomalías'
+    anomalia:      anomalia
   };
 
   fetch(SHEETS_URL, {
@@ -1574,7 +1536,7 @@ hist.unshift({ ...record, items: record.items.map(i => ({
 
 name: i.name, lot: i.lot, qty: i.qty, scannedOk: i.scannedOk,
 
-scannedWrong: i.scannedWrong, status: i.status, comment: i.comment
+status: i.status, comment: i.comment
 
 }))});
 
@@ -1618,9 +1580,8 @@ function renderHistory() {
   }
 
   const rows = hist.map((r, i) => {
-    const hasIssues = r.errPieces > 0 || r.skipPieces > 0;
-    const anomalia  = hasIssues
-      ? `<span class="td-err">⚠ ${r.errPieces > 0 ? r.errPieces + ' err' : ''}${r.errPieces > 0 && r.skipPieces > 0 ? ' · ' : ''}${r.skipPieces > 0 ? r.skipPieces + ' omit' : ''}</span>`
+    const anomalia = r.skipPieces > 0
+      ? `<span class="td-err">⚠ ${r.skipPieces} omit</span>`
       : '<span class="td-ok">Sin anomalías</span>';
     const user = (r.user || '—').split('@')[0];
     const dateLabel = fmtDate(r.orderScanTime || r.date);
@@ -1669,9 +1630,7 @@ const date = new Date(r.date).toLocaleString('es-MX');
 
 let detail = `Orden: ${r.order?.name}\nFecha: ${date}\nAlmacenista: ${(r.user||'').split('@')[0]}\n`;
 
-detail += `\nResumen: ✅ ${r.okPieces} correctas · ❌ ${r.errPieces} errores · ⏭ ${r.skipPieces} omitidas\n`;
-
-if (r.generalComment) detail += `\nComentario general: ${r.generalComment}\n`;
+detail += `\nResumen: ✅ ${r.okPieces} correctas · ⏭ ${r.skipPieces} omitidas\n`;
 
 const issues = r.items.filter(i => i.status !== 'ok');
 
@@ -1717,31 +1676,26 @@ function newPicking() {
 
 order=null; items=[]; currentIdx=0;
 
-document.getElementById('orderInput').value='';
+orderScanTime=null; firstItemTime=null; lastItemTime=null;
+
+const oi = document.getElementById('orderInput');
+oi.value='';
+oi.setAttribute('inputmode','none');
 
 showScreen('screenScan');
-
-setTimeout(() => document.getElementById('orderInput').focus(), 100);
 
 }
 
 // ── INIT ─────────────────────────────────────────────────
 
 (async function init() {
-  // Ocultar tab de historial si no es admin
-  function updateNavVisibility() {
-    const histTab = document.querySelectorAll('.nav-tab')[1];
-    if (histTab) histTab.style.display = isAdmin() ? '' : 'none';
-  }
-  updateNavVisibility();
 
   if (cfg.url && cfg.key) {
-    try { const uid = await getUid(); if(uid) { setConn('ok'); updateNavVisibility(); } }
+    try { const uid = await getUid(); if(uid) { setConn('ok'); } }
     catch(e) { setConn('err'); }
   } else {
     setTimeout(showConfig, 400);
   }
-  setTimeout(() => document.getElementById('orderInput').focus(), 300);
 })();
 
 </script>
