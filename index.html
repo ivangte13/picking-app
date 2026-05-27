@@ -932,6 +932,10 @@ document.getElementById('progressBar').style.width = pct + '%';
 
 document.getElementById('progressLabel').textContent = `${done} / ${total} piezas`;
 
+const allDone = items.every(i => i.status !== 'pending' && i.status !== 'partial');
+
+document.getElementById('activeCard').style.display = allDone ? 'none' : 'block';
+
 }
 
 function renderList() {
