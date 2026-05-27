@@ -1521,6 +1521,10 @@ function sendToSheets(record) {
       }).join(' | ')
     : 'Sin anomalías';
 
+  const pzTotales    = (record.items || []).reduce((s,i) => s + (i.qty || 0), 0);
+  const pzEscaneadas = record.okPieces || 0;
+  const diferencia   = pzTotales - pzEscaneadas;
+
   const payload = {
     order:         record.order?.name || record.order || '—',
     user:          (record.user || '—').split('@')[0],
@@ -1529,6 +1533,9 @@ function sendToSheets(record) {
     firstItemTime: fmtTime(record.firstItemTime),
     lastItemTime:  fmtTime(record.lastItemTime),
     minutes:       minutos,
+    pzTotales:     pzTotales,
+    pzEscaneadas:  pzEscaneadas,
+    diferencia:    diferencia,
     anomalia:      anomalia
   };
 
