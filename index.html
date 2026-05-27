@@ -332,7 +332,7 @@ function downloadExcel() {
 
 <div class="scan-label">Escanea el código de barras<br>de la orden de entrega</div>
 
-<input class="scan-input" id="orderInput" type="text" placeholder="Escanear folio..." autocomplete="off" autocorrect="off" spellcheck="false" inputmode="none">
+<input class="scan-input" id="orderInput" type="text" placeholder="Escanear folio..." autocomplete="off" autocorrect="off" spellcheck="false" inputmode="none" readonly>
 
 <button class="btn btn-primary" onclick="loadOrder()">Cargar orden</button>
 
@@ -459,7 +459,7 @@ function downloadExcel() {
 
 </div>
 
-<input class="scan-input" id="lotInput" type="text" placeholder="Escanear código de lote..." autocomplete="off" autocorrect="off" spellcheck="false" inputmode="none" style="margin-top:12px;">
+<input class="scan-input" id="lotInput" type="text" placeholder="Escanear código de lote..." autocomplete="off" autocorrect="off" spellcheck="false" inputmode="none" readonly style="margin-top:12px;">
 
 <button class="skip-btn" onclick="skipItem()">Omitir producto restante →</button>
 
@@ -658,9 +658,13 @@ function goToScan() { showScreen('screenScan'); }
 
 function enableManualOrder() {
   const input = document.getElementById('orderInput');
+  input.removeAttribute('readonly');
   input.setAttribute('inputmode', 'text');
   input.focus();
-  input.addEventListener('blur', () => input.setAttribute('inputmode', 'none'), { once: true });
+  input.addEventListener('blur', () => {
+    input.setAttribute('inputmode', 'none');
+    input.setAttribute('readonly', '');
+  }, { once: true });
 }
 
 async function testConn() {
@@ -1664,7 +1668,10 @@ order=null; items=[]; currentIdx=0;
 
 orderScanTime=null; firstItemTime=null; lastItemTime=null;
 
-document.getElementById('orderInput').value='';
+const oi = document.getElementById('orderInput');
+oi.value='';
+oi.setAttribute('inputmode','none');
+oi.setAttribute('readonly','');
 
 showScreen('screenScan');
 
