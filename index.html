@@ -656,6 +656,18 @@ testConn();
 
 function goToScan() { showScreen('screenScan'); }
 
+// Bloquear teclado virtual en orderInput salvo modo manual
+(function() {
+  const inp = document.getElementById('orderInput');
+  if (!inp) return;
+  inp.addEventListener('touchstart', function(e) {
+    if (inp.getAttribute('inputmode') !== 'text') {
+      e.preventDefault();
+      inp.focus();
+    }
+  }, { passive: false });
+})();
+
 function enableManualOrder() {
   const input = document.getElementById('orderInput');
   input.setAttribute('inputmode', 'text');
