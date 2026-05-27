@@ -264,6 +264,9 @@ function downloadExcel() {
           return `⏭ ${cleanName(i.name)} · ${pza} pza — ${motivo}`;
         }).join(' | ')
       : 'Sin anomalías';
+    const pzTotales   = (r.items || []).reduce((s,i) => s + (i.qty || 0), 0);
+    const pzEscaneadas = r.okPieces || 0;
+    const diferencia  = pzTotales - pzEscaneadas;
     return {
       '# Pedido':            r.order?.name || '',
       'Origen':              r.order?.origin || '',
@@ -273,8 +276,9 @@ function downloadExcel() {
       'Hora primer ítem':    fmt(r.firstItemTime),
       'Hora último ítem':    fmt(r.lastItemTime),
       'Tiempo total (min)':  mins(r.orderScanTime, r.lastItemTime),
-      'Piezas correctas':    r.okPieces   || 0,
-      'Omitidos':            r.skipPieces || 0,
+      'Pz totales':          pzTotales,
+      'Pz escaneadas':       pzEscaneadas,
+      'Diferencia Pz':       diferencia,
       'Anomalía':            anomalia
     };
   });
@@ -283,15 +287,27 @@ function downloadExcel() {
 
   // Ancho de columnas
   ws['!cols'] = [
-    {wch:18},{wch:14},{wch:28},{wch:12},{wch:22},{wch:22},{wch:22},
-    {wch:18},{wch:16},{wch:10},{wch:10},{wch:32},{wch:30}
+    {wch:28},{wch:14},{wch:12},{wch:12},{wch:22},{wch:22},{wch:22},
+    {wch:16},{wch:12},{wch:14},{wch:14},{wch:50}
   ];
+
+  // Color de encabezados — azul marino marca DI
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let C = range.s.c; C <= range.e.c; C++) {
+    const cell = ws[XLSX.utils.encode_cell({r:0, c:C})];
+    if (!cell) continue;
+    cell.s = {
+      fill: { fgColor: { rgb: '1E509E' } },
+      font: { bold: true, color: { rgb: 'FFFFFF' } },
+      alignment: { horizontal: 'center' }
+    };
+  }
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Picking');
 
   const fecha = new Date().toLocaleDateString('es-MX').replace(/\//g,'-');
-  XLSX.writeFile(wb, `picking_diagnostica_${fecha}.xlsx`);
+  XLSX.writeFile(wb, `picking_diagnostica_${fecha}.xlsx`, {cellStyles: true});
   toast('✅ Excel descargado');
 }
 
