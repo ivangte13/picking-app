@@ -8,7 +8,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<title>[DEV] Picking — Diagnóstica Internacional</title>
+<title>Picking — Diagnóstica Internacional</title>
 
 <style>
 
@@ -261,9 +261,7 @@ function downloadExcel() {
   }
 
   const rows = hist.map(r => {
-    const anomalia = [];
-    if (r.errPieces  > 0) anomalia.push(r.errPieces  + ' lote(s) incorrecto(s)');
-    if (r.skipPieces > 0) anomalia.push(r.skipPieces + ' pieza(s) omitida(s)');
+    const anomalia = r.skipPieces > 0 ? r.skipPieces + ' pieza(s) omitida(s)' : 'Sin anomalías';
     return {
       '# Pedido':            r.order?.name || '',
       'Origen':              r.order?.origin || '',
@@ -274,10 +272,8 @@ function downloadExcel() {
       'Hora último ítem':    fmt(r.lastItemTime),
       'Tiempo total (min)':  mins(r.orderScanTime, r.lastItemTime),
       'Piezas correctas':    r.okPieces   || 0,
-      'Errores':             r.errPieces  || 0,
       'Omitidos':            r.skipPieces || 0,
-      'Anomalía':            anomalia.length ? anomalia.join(' · ') : 'Sin anomalías',
-      'Comentario general':  r.generalComment || ''
+      'Anomalía':            anomalia
     };
   });
 
@@ -477,34 +473,6 @@ function downloadExcel() {
 
 <div id="productList"></div>
 
-<button class="btn btn-primary" id="finishBtn" onclick="goToObservations()" style="display:none;margin-top:16px;">Continuar al resumen →</button>
-
-</div>
-
-<!-- SCREEN OBSERVACIONES -->
-
-<div class="screen" id="screenObs">
-
-<div class="section-title">Observaciones finales</div>
-
-<div class="order-banner">
-
-<div class="order-folio" id="obsFolio"></div>
-
-</div>
-
-<div id="obsList"></div>
-
-<div style="margin-top:16px;">
-
-<div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-family:var(--mono);">COMENTARIO GENERAL (opcional)</div>
-
-<textarea class="comment-input" id="generalComment" rows="3" placeholder="Alguna observación general del picking..."></textarea>
-
-</div>
-
-<button class="btn btn-primary" onclick="showSummary()" style="margin-top:16px;">Ver resumen final</button>
-
 </div>
 
 <!-- SCREEN RESUMEN -->
@@ -524,8 +492,6 @@ function downloadExcel() {
 <div class="summary-grid">
 
 <div class="summary-card ok-card"><div class="summary-num" id="sumOk">0</div><div class="summary-lbl">Correctas</div></div>
-
-<div class="summary-card err-card"><div class="summary-num" id="sumErr">0</div><div class="summary-lbl">Errores</div></div>
 
 <div class="summary-card warn-card"><div class="summary-num" id="sumSkip">0</div><div class="summary-lbl">Omitidas</div></div>
 
@@ -549,7 +515,7 @@ function downloadExcel() {
 
 </div>
 
-<button class="btn btn-primary" onclick="newPicking()" style="margin-top:20px;">Nueva orden</button>
+<button class="btn btn-primary" onclick="newPicking()" style="margin-top:20px;">Iniciar otro pedido →</button>
 
 </div>
 
@@ -587,7 +553,7 @@ if (!cfg.key) cfg.key = '';
 
 let order = null;
 
-// item: {id, name, lot, qty, loc, exp, scannedOk, scannedWrong, status, comment}
+// item: {id, name, lot, qty, loc, exp, scannedOk, status, comment}
 
 // status: 'pending' | 'partial' | 'ok' | 'error' | 'skip'
 
@@ -843,8 +809,6 @@ exp: m.expiration_date ? m.expiration_date.substring(0,10) : null,
 
 scannedOk: 0,
 
-scannedWrong: 0,
-
 status: 'pending',
 
 comment: ''
@@ -968,12 +932,6 @@ document.getElementById('progressBar').style.width = pct + '%';
 
 document.getElementById('progressLabel').textContent = `${done} / ${total} piezas`;
 
-const allDone = items.every(i => i.status !== 'pending' && i.status !== 'partial');
-
-document.getElementById('finishBtn').style.display = allDone ? 'block' : 'none';
-
-document.getElementById('activeCard').style.display = allDone ? 'none' : 'block';
-
 }
 
 function renderList() {
@@ -992,7 +950,7 @@ div.className = `product-item ${isActive ? 'active' : item.status}`;
 
 div.id = `item-${i}`;
 
-const statusIcon = {ok:'✅', error:'❌', skip:'⏭', partial:'🔄', pending:''}[item.status]||'';
+const statusIcon = {ok:'✅', skip:'⏭', partial:'🔄', pending:''}[item.status]||'';
 
 const expTag = item.exp ? `<span class="tag tag-exp">Cad: ${item.exp}</span>` : '';
 
@@ -1024,7 +982,6 @@ ${expTag}${progressTag}
 
 </div>
 
-${item.status==='error' ? `<div style="font-size:11px;color:var(--danger);margin-top:8px;font-family:var(--mono);">Lote incorrecto escaneado</div>` : ''}
 
 ${retryBtn}`;
 
@@ -1233,8 +1190,6 @@ renderList();
 
 } else {
 
-item.scannedWrong++;
-
 // NO avanzar — quedarse en el mismo item
 
 showFlash('err','❌','Lote incorrecto', `Esperado: ${item.lot}`);
@@ -1281,23 +1236,60 @@ if (next !== -1) {
     currentIdx = next; renderList(); setActiveItem();
   }
 } else {
-  // Todos terminados
-  showAreaModal('✅ Terminaste todos los productos<br>de este pedido', () => { renderList(); updateProgress(); setTimeout(() => window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'}), 100); });
+  // Todos terminados → auto-finalizar
+  showAreaModal('✅ Terminaste todos los productos<br>de este pedido', () => {
+    finishPicking();
+  });
 }
 
+}
+
+function showSkipModal(onConfirm, onCancel) {
+  let overlay = document.getElementById('areaOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'areaOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:300;background:rgba(15,17,23,0.96);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px;';
+    document.body.appendChild(overlay);
+  }
+  overlay.innerHTML = `
+    <div style="font-size:40px;text-align:center;">⏭</div>
+    <div style="font-family:var(--mono);font-size:15px;color:var(--warn);text-align:center;line-height:1.6;">¿Por qué omites este producto?</div>
+    <textarea id="skipReasonInput" rows="3"
+      style="width:100%;max-width:320px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--sans);font-size:14px;padding:10px 12px;outline:none;resize:none;"
+      placeholder="Escribe el motivo..."></textarea>
+    <button id="skipConfirmBtn"
+      style="background:var(--warn);color:#0f1117;border:none;border-radius:10px;padding:14px 32px;font-size:15px;font-weight:600;font-family:var(--mono);cursor:pointer;width:100%;max-width:320px;">
+      OMITIR →
+    </button>
+    <button id="skipCancelBtn"
+      style="background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:10px;padding:12px 32px;font-size:14px;font-family:var(--mono);cursor:pointer;width:100%;max-width:320px;">
+      CANCELAR
+    </button>`;
+  overlay.style.display = 'flex';
+  document.getElementById('skipConfirmBtn').onclick = () => {
+    const reason = document.getElementById('skipReasonInput').value.trim();
+    overlay.style.display = 'none';
+    onConfirm(reason);
+  };
+  document.getElementById('skipCancelBtn').onclick = () => {
+    overlay.style.display = 'none';
+    if (onCancel) onCancel();
+  };
+  setTimeout(() => document.getElementById('skipReasonInput')?.focus(), 100);
 }
 
 function skipItem() {
 
 if (currentIdx >= items.length) return;
 
-items[currentIdx].status = 'skip';
-
-advanceNext();
-
-updateProgress();
-
-renderList();
+showSkipModal((reason) => {
+  items[currentIdx].status = 'skip';
+  items[currentIdx].comment = reason;
+  advanceNext();
+  updateProgress();
+  renderList();
+});
 
 }
 
@@ -1305,11 +1297,9 @@ function retryItem(idx) {
 
 items[idx].status = items[idx].scannedOk > 0 ? 'partial' : 'pending';
 
-items[idx].scannedWrong = 0;
+items[idx].comment = '';
 
 currentIdx = idx;
-
-document.getElementById('finishBtn').style.display = 'none';
 
 document.getElementById('activeCard').style.display = 'block';
 
@@ -1321,65 +1311,15 @@ setActiveItem();
 
 }
 
-// ── OBSERVACIONES ─────────────────────────────────────────
+// ── FINALIZAR PICKING ─────────────────────────────────────
 
-function goToObservations() {
+function finishPicking() {
 
-const issueItems = items.filter(i => i.status==='error'||i.status==='skip');
-
-document.getElementById('obsFolio').textContent = order.name;
-
-const obsList = document.getElementById('obsList');
-
-obsList.innerHTML = '';
-
-if (issueItems.length === 0) {
-
-obsList.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text2);font-size:13px;">Sin productos con problemas</div>';
-
-} else {
-
-issueItems.forEach(item => {
-
-const div = document.createElement('div');
-
-div.className = `issue-item ${item.status==='skip'?'skip-issue':''}`;
-
-div.innerHTML = `
-
-<div class="issue-item-name ${item.status==='error'?'err':'skip'}">${item.status==='error'?'❌':'⏭'} ${cleanName(item.name)}</div>
-
-<div class="issue-item-detail">Lote: ${item.lot} · Cantidad: ${item.qty} pza${item.scannedOk>0?` · Escaneadas: ${item.scannedOk}`:''}</div>
-
-<textarea class="comment-input" rows="2" placeholder="Observación (opcional)..." oninput="items[${item.idx}].comment=this.value">${item.comment}</textarea>`;
-
-obsList.appendChild(div);
-
-});
-
-}
-
-document.getElementById('generalComment').value = '';
-
-showScreen('screenObs');
-
-}
-
-// ── RESUMEN ──────────────────────────────────────────────
-
-function showSummary() {
-
-const generalComment = document.getElementById('generalComment').value.trim();
-
-// Count by pieces
-
-let okPieces = 0, errPieces = 0, skipPieces = 0;
+let okPieces = 0, skipPieces = 0;
 
 items.forEach(item => {
 
 if (item.status==='ok') okPieces += item.qty;
-
-else if (item.status==='error') { okPieces += item.scannedOk; errPieces += (item.qty - item.scannedOk + item.scannedWrong); }
 
 else if (item.status==='skip') { okPieces += item.scannedOk; skipPieces += (item.qty - item.scannedOk); }
 
@@ -1387,9 +1327,39 @@ else if (item.status==='partial') { okPieces += item.scannedOk; skipPieces += (i
 
 });
 
-document.getElementById('sumOk').textContent = okPieces;
+const finishDate = new Date();
 
-document.getElementById('sumErr').textContent = errPieces;
+const record = {
+
+order, items, okPieces, skipPieces,
+
+user: cfg.user,
+
+date:           finishDate.toISOString(),
+
+orderScanTime:  orderScanTime  ? orderScanTime.toISOString()  : null,
+
+firstItemTime:  firstItemTime  ? firstItemTime.toISOString()  : null,
+
+lastItemTime:   lastItemTime   ? lastItemTime.toISOString()   : null
+
+};
+
+saveHistory(record);
+
+sendToSheets(record);
+
+showSummary(record);
+
+}
+
+// ── RESUMEN ──────────────────────────────────────────────
+
+function showSummary(record) {
+
+const { okPieces, skipPieces } = record;
+
+document.getElementById('sumOk').textContent = okPieces;
 
 document.getElementById('sumSkip').textContent = skipPieces;
 
@@ -1401,53 +1371,31 @@ document.getElementById('summaryMeta').textContent =
 
 `${partnerName} · ${new Date().toLocaleString('es-MX')} · Almacenista: ${cfg.user.split('@')[0]}`;
 
-const issueItems = items.filter(i => i.status!=='ok');
+const skipItems = items.filter(i => i.status==='skip' || i.status==='partial');
 
 const issueList = document.getElementById('issueList');
 
 issueList.innerHTML = '';
 
-if (issueItems.length > 0) {
+if (skipItems.length > 0) {
 
 document.getElementById('issueListWrap').style.display = 'block';
 
 document.getElementById('allOkMsg').style.display = 'none';
 
-issueItems.forEach(item => {
+skipItems.forEach(item => {
 
-let piecesAffected = 0;
-
-let detail = '';
-
-if (item.status==='error') {
-
-piecesAffected = item.qty - item.scannedOk + item.scannedWrong;
-
-detail = `Lote: ${item.lot} · ${piecesAffected} pieza(s) con error`;
-
-} else if (item.status==='skip') {
-
-piecesAffected = item.qty - item.scannedOk;
-
-detail = `Omitido · ${piecesAffected} pieza(s) faltante(s)`;
-
-} else if (item.status==='partial') {
-
-piecesAffected = item.qty - item.scannedOk;
-
-detail = `Incompleto · ${piecesAffected} pieza(s) faltante(s)`;
-
-}
+const piezasFaltantes = item.qty - item.scannedOk;
 
 const div = document.createElement('div');
 
-div.className = `issue-item ${item.status==='skip'||item.status==='partial'?'skip-issue':''}`;
+div.className = 'issue-item skip-issue';
 
 div.innerHTML = `
 
-<div class="issue-item-name ${item.status==='error'?'err':'skip'}">${item.status==='error'?'❌':'⏭'} ${cleanName(item.name)} <span style="font-size:10px;opacity:.7">(${piecesAffected} pza)</span></div>
+<div class="issue-item-name skip">⏭ ${cleanName(item.name)} <span style="font-size:10px;opacity:.7">(${piezasFaltantes} pza)</span></div>
 
-<div class="issue-item-detail">${detail}${item.comment ? `\nObservación: ${item.comment}` : ''}</div>`;
+<div class="issue-item-detail">Omitido · ${piezasFaltantes} pieza(s) faltante(s)${item.comment ? `\nMotivo: ${item.comment}` : ''}</div>`;
 
 issueList.appendChild(div);
 
@@ -1460,20 +1408,6 @@ document.getElementById('issueListWrap').style.display = 'none';
 document.getElementById('allOkMsg').style.display = 'block';
 
 }
-
-// Guardar en historial
-const finishDate = new Date();
-const record = {
-  order, items, okPieces, errPieces, skipPieces,
-  user: cfg.user,
-  generalComment,
-  date:           finishDate.toISOString(),
-  orderScanTime:  orderScanTime  ? orderScanTime.toISOString()  : null,
-  firstItemTime:  firstItemTime  ? firstItemTime.toISOString()  : null,
-  lastItemTime:   lastItemTime   ? lastItemTime.toISOString()   : null
-};
-saveHistory(record);
-sendToSheets(record);
 
 showScreen('screenSummary');
 
@@ -1539,9 +1473,9 @@ function sendToSheets(record) {
   const minutos = (record.orderScanTime && record.lastItemTime)
     ? ((new Date(record.lastItemTime) - new Date(record.orderScanTime)) / 60000).toFixed(1)
     : '—';
-  const anomalia = [];
-  if (record.errPieces  > 0) anomalia.push(record.errPieces  + ' lote(s) incorrecto(s)');
-  if (record.skipPieces > 0) anomalia.push(record.skipPieces + ' pieza(s) omitida(s)');
+  const anomalia = record.skipPieces > 0
+    ? record.skipPieces + ' pieza(s) omitida(s)'
+    : 'Sin anomalías';
 
   const payload = {
     order:         record.order?.name || record.order || '—',
@@ -1551,7 +1485,7 @@ function sendToSheets(record) {
     firstItemTime: fmtTime(record.firstItemTime),
     lastItemTime:  fmtTime(record.lastItemTime),
     minutes:       minutos,
-    anomalia:      anomalia.length ? anomalia.join(' · ') : 'Sin anomalías'
+    anomalia:      anomalia
   };
 
   fetch(SHEETS_URL, {
@@ -1574,7 +1508,7 @@ hist.unshift({ ...record, items: record.items.map(i => ({
 
 name: i.name, lot: i.lot, qty: i.qty, scannedOk: i.scannedOk,
 
-scannedWrong: i.scannedWrong, status: i.status, comment: i.comment
+status: i.status, comment: i.comment
 
 }))});
 
@@ -1618,9 +1552,8 @@ function renderHistory() {
   }
 
   const rows = hist.map((r, i) => {
-    const hasIssues = r.errPieces > 0 || r.skipPieces > 0;
-    const anomalia  = hasIssues
-      ? `<span class="td-err">⚠ ${r.errPieces > 0 ? r.errPieces + ' err' : ''}${r.errPieces > 0 && r.skipPieces > 0 ? ' · ' : ''}${r.skipPieces > 0 ? r.skipPieces + ' omit' : ''}</span>`
+    const anomalia = r.skipPieces > 0
+      ? `<span class="td-err">⚠ ${r.skipPieces} omit</span>`
       : '<span class="td-ok">Sin anomalías</span>';
     const user = (r.user || '—').split('@')[0];
     const dateLabel = fmtDate(r.orderScanTime || r.date);
@@ -1669,9 +1602,7 @@ const date = new Date(r.date).toLocaleString('es-MX');
 
 let detail = `Orden: ${r.order?.name}\nFecha: ${date}\nAlmacenista: ${(r.user||'').split('@')[0]}\n`;
 
-detail += `\nResumen: ✅ ${r.okPieces} correctas · ❌ ${r.errPieces} errores · ⏭ ${r.skipPieces} omitidas\n`;
-
-if (r.generalComment) detail += `\nComentario general: ${r.generalComment}\n`;
+detail += `\nResumen: ✅ ${r.okPieces} correctas · ⏭ ${r.skipPieces} omitidas\n`;
 
 const issues = r.items.filter(i => i.status !== 'ok');
 
@@ -1716,6 +1647,8 @@ setTimeout(() => { f.classList.remove('show'); document.getElementById('lotInput
 function newPicking() {
 
 order=null; items=[]; currentIdx=0;
+
+orderScanTime=null; firstItemTime=null; lastItemTime=null;
 
 document.getElementById('orderInput').value='';
 
