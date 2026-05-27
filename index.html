@@ -46,7 +46,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 
 .conn-dot{width:7px;height:7px;border-radius:50%;background:var(--text2);transition:background .3s;}
 
-.conn-dot.ok{background:var(--accent);box-shadow:0 0 6px var(--accent);}
+.conn-dot.ok{background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,0.6);}
 
 .conn-dot.err{background:var(--danger);}
 
@@ -332,7 +332,7 @@ function downloadExcel() {
 
 <div class="scan-label">Escanea el código de barras<br>de la orden de entrega</div>
 
-<input class="scan-input" id="orderInput" type="text" placeholder="Escanear folio..." autocomplete="off" autocorrect="off" spellcheck="false" inputmode="none" readonly>
+<input class="scan-input" id="orderInput" type="text" placeholder="Escanear folio..." autocomplete="off" autocorrect="off" spellcheck="false" inputmode="none">
 
 <button class="btn btn-primary" onclick="loadOrder()">Cargar orden</button>
 
@@ -459,7 +459,7 @@ function downloadExcel() {
 
 </div>
 
-<input class="scan-input" id="lotInput" type="text" placeholder="Escanear código de lote..." autocomplete="off" autocorrect="off" spellcheck="false" inputmode="none" readonly style="margin-top:12px;">
+<input class="scan-input" id="lotInput" type="text" placeholder="Escanear código de lote..." autocomplete="off" autocorrect="off" spellcheck="false" inputmode="none" style="margin-top:12px;">
 
 <button class="skip-btn" onclick="skipItem()">Omitir producto restante →</button>
 
@@ -658,12 +658,10 @@ function goToScan() { showScreen('screenScan'); }
 
 function enableManualOrder() {
   const input = document.getElementById('orderInput');
-  input.removeAttribute('readonly');
   input.setAttribute('inputmode', 'text');
   input.focus();
   input.addEventListener('blur', () => {
     input.setAttribute('inputmode', 'none');
-    input.setAttribute('readonly', '');
   }, { once: true });
 }
 
@@ -1671,7 +1669,6 @@ orderScanTime=null; firstItemTime=null; lastItemTime=null;
 const oi = document.getElementById('orderInput');
 oi.value='';
 oi.setAttribute('inputmode','none');
-oi.setAttribute('readonly','');
 
 showScreen('screenScan');
 
